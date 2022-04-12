@@ -21,9 +21,17 @@ terminal PLUS, BECOMES;
 
 /* delimiters */
 terminal LPAREN, RPAREN, SEMICOLON;
+terminal LBRACKET, RBRACKET;
+terminal LBRACE, RBRACE;
 
 /* identifiers */
 terminal String IDENTIFIER;
+
+/* digits */
+terminal Integer DIGIT;
+
+/* letters */
+terminal Character LETTER;
 
 
 /* Nonterminals (constructed by parser): */
@@ -48,7 +56,7 @@ Program ::= Statement:s
                p.add(s);
                RESULT = p; :}
         | Program:p Statement:s
-            {: p.add(s); RESULT = p; :};
+            {: p.add(s); RESULT z = p; :};
 
 Statement   ::= AssignStatement:s
                 {: RESULT = s; :}

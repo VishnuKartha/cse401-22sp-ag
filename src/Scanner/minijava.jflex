@@ -95,7 +95,11 @@ import Parser.sym;
      ComplexSymbol cs = (ComplexSymbol)s; 
      if (cs.sym == sym.IDENTIFIER) {
        return "ID(" + (String)cs.value + ")";
-     } else if (cs.sym == sym.error) {
+     }else if(cs.sym == sym.LETTER){
+        return "LETTER(" + (String)cs.value + ")";
+     }else if(cs.sym == sym.DIGIT){
+        return "DIGIT(" + (String)cs.value + ")";
+     }else if (cs.sym == sym.error) {
        return "<UNEXPECTED(" + (String)cs.value + ")>";
      } else {
        return cs.getName();
@@ -128,6 +132,14 @@ white = {eol}|[ \t]
 /* identifiers */
 {letter} ({letter}|{digit}|_)* {
   return symbol(sym.IDENTIFIER, yytext());
+}
+/* digits */
+{digit} {
+    return symbol(sym.DIGIT, yytext());
+}
+
+{letter} {
+    return symbol(sym.LETTER, yytext());
 }
 
 
