@@ -33,6 +33,8 @@ terminal Integer DIGIT;
 /* letters */
 terminal Character LETTER;
 
+/* keywords */
+
 
 /* Nonterminals (constructed by parser): */
 
