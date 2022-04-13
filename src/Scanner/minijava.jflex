@@ -122,29 +122,64 @@ white = {eol}|[ \t]
 
 /* operators */
 "+" { return symbol(sym.PLUS); }
+"-" { return symbol(sym.MINUS); }
 "=" { return symbol(sym.BECOMES); }
+"*" { return symbol(sym.TIMES); }
+"!" { return symbol(sym.NOT); }
+"&&" { return symbol(sym.AND); }
+"." { return symbol(sym.PERIOD); }
+
 
 /* delimiters */
 "(" { return symbol(sym.LPAREN); }
 ")" { return symbol(sym.RPAREN); }
+"[" { return symbol(sym.LBRACKET); }
+"]" { return symbol(sym.RBRACKET); }
+"{" { return symbol(sym.LBRACE); }
+"}" { return symbol(sym.RBRACE); }
 ";" { return symbol(sym.SEMICOLON); }
+"," { return symbol(sym.COMMA); }
+
+/* types */
+"int" { return symbol(sym.INT); }
+"boolean" { return symbol(sym.BOOLEAN); }
+
+/* keywords */
+"true" { return symbol(sym.TRUE); }
+"false" { return symbol(sym.FALSE); }
+"class" { return symbol(sym.CLASS); }
+"public" { return symbol(sym.PUBLIC); }
+"static" { return symbol(sym.STATIC); }
+"void" { return symbol(sym.VOID); }
+"main" { return symbol(sym.MAIN); }
+"new" { return symbol(sym.NEW); }
+"if" { return symbol(sym.IF); }
+"else" { return symbol(sym.ELSE); }
+"while" { return symbol(sym.WHILE); }
+"System.out.println" { return symbol(sym.SOUT); }
+"this" { return symbol(sym.THIS); }
+"return" { return symbol(sym.RETURN); }
+"extends" { return symbol(sym.EXTENDS); }
 
 /* identifiers */
 {letter} ({letter}|{digit}|_)* {
   return symbol(sym.IDENTIFIER, yytext());
 }
+
 /* digits */
 {digit} {
     return symbol(sym.DIGIT, yytext());
 }
 
+/* letters */
 {letter} {
     return symbol(sym.LETTER, yytext());
 }
 
-
 /* whitespace */
 {white}+ { /* ignore whitespace */ }
+
+/* Comments */
 
 /* lexical errors (last so other matches take precedence) */
 . {

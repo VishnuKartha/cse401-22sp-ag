@@ -49,6 +49,8 @@ terminal String NEW;
 terminal String IF, ELSE, WHILE;
 terminal String SOUT;
 terminal String THIS;
+terminal String RETURN;
+terminal String EXTENDS;
 
 /* Comments */
 terminal String INLINE_COMMENT;
@@ -76,7 +78,7 @@ Program ::= Statement:s
                p.add(s);
                RESULT = p; :}
         | Program:p Statement:s
-            {: p.add(s); RESULT z = p; :};
+            {: p.add(s); RESULT = p; :};
 
 Statement   ::= AssignStatement:s
                 {: RESULT = s; :}
