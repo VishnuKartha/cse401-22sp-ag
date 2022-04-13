@@ -30,15 +30,13 @@ terminal LBRACE, RBRACE;
 /* identifiers */
 terminal String IDENTIFIER;
 
-/* digits */
-terminal Integer DIGIT;
-
 /* letters */
 terminal Character LETTER;
 
 /* types */
 terminal String INT;
 terminal String BOOLEAN;
+terminal Integer INTEGER_LITERAL;
 
 
 /* keywords */
@@ -52,10 +50,6 @@ terminal String THIS;
 terminal String RETURN;
 terminal String EXTENDS;
 terminal String LENGTH;
-
-/* Comments */
-terminal String INLINE_COMMENT;
-terminal String MULTILINE_COMMENT;
 
 /* Nonterminals (constructed by parser): */
 

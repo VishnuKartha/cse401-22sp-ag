@@ -97,11 +97,11 @@ import Parser.sym;
        return "ID(" + (String)cs.value + ")";
      }else if(cs.sym == sym.LETTER){
         return "LETTER(" + (String)cs.value + ")";
-     }else if(cs.sym == sym.DIGIT){
-        return "DIGIT(" + (String)cs.value + ")";
+     }else if(cs.sym == sym.INTEGER_LITERAL){
+        return "INTEGER_LITERAL(" + (String)cs.value + ")";
      }else if (cs.sym == sym.error) {
        return "<UNEXPECTED(" + (String)cs.value + ")>";
-     } else {
+     }else{
        return cs.getName();
      }
    }
@@ -169,9 +169,9 @@ multistart = \/\*
   return symbol(sym.IDENTIFIER, yytext());
 }
 
-/* digits */
-{digit} {
-    return symbol(sym.DIGIT, yytext());
+/* int literal */
+([1-9]{digit}*|0) {
+    return symbol(sym.INTEGER_LITERAL, yytext());
 }
 
 /* letters */
@@ -183,13 +183,9 @@ multistart = \/\*
 {white}+ { /* ignore whitespace */ }
 
 /* Comments */
-{inline}[^{eol}]*{eol} {
-    return symbol(sym.INLINE_COMMENT);
-}
+{inline}[^{eol}]*{eol} {}
 
-{multistart}([^*]|[*]+[^/])*[*]+\/ {
-    return symbol(sym.MULTILINE_COMMENT);
-}
+{multistart}([^*]|[*]+[^/])*[*]+\/ {}
 
 
 
