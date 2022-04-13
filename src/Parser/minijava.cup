@@ -51,10 +51,11 @@ terminal String SOUT;
 terminal String THIS;
 terminal String RETURN;
 terminal String EXTENDS;
+terminal String LENGTH;
 
 /* Comments */
 terminal String INLINE_COMMENT;
-terminal String MUlTILINE_COMMENT;
+terminal String MULTILINE_COMMENT;
 
 /* Nonterminals (constructed by parser): */
 

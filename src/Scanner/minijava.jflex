@@ -112,6 +112,8 @@ letter = [a-zA-Z]
 digit = [0-9]
 eol = [\r\n]
 white = {eol}|[ \t]
+inline = \/\/
+multistart = \/\*
 
 %%
 
@@ -160,9 +162,10 @@ white = {eol}|[ \t]
 "this" { return symbol(sym.THIS); }
 "return" { return symbol(sym.RETURN); }
 "extends" { return symbol(sym.EXTENDS); }
+"length" { return symbol(sym.LENGTH); }
 
 /* identifiers */
-{letter} ({letter}|{digit}|_)* {
+{letter}({letter}|{digit}|_)* {
   return symbol(sym.IDENTIFIER, yytext());
 }
 
@@ -180,6 +183,15 @@ white = {eol}|[ \t]
 {white}+ { /* ignore whitespace */ }
 
 /* Comments */
+{inline}[^{eol}]*{eol} {
+    return symbol(sym.INLINE_COMMENT);
+}
+
+{multistart}([^*]|[*]+[^/])*[*]+\/ {
+    return symbol(sym.MULTILINE_COMMENT);
+}
+
+
 
 /* lexical errors (last so other matches take precedence) */
 . {

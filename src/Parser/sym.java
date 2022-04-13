@@ -20,6 +20,7 @@ public class sym {
   public static final int SOUT = 34;
   public static final int SEMICOLON = 12;
   public static final int AND = 6;
+  public static final int MULTILINE_COMMENT = 40;
   public static final int COMMA = 13;
   public static final int CLASS = 25;
   public static final int DIGIT = 19;
@@ -44,9 +45,9 @@ public class sym {
   public static final int PUBLIC = 26;
   public static final int RBRACE = 17;
   public static final int EXTENDS = 37;
-  public static final int MUlTILINE_COMMENT = 39;
   public static final int FALSE = 24;
-  public static final int INLINE_COMMENT = 38;
+  public static final int INLINE_COMMENT = 39;
+  public static final int LENGTH = 38;
   public static final int IDENTIFIER = 18;
   public static final String[] terminalNames = new String[] {
   "EOF",
@@ -87,8 +88,9 @@ public class sym {
   "THIS",
   "RETURN",
   "EXTENDS",
+  "LENGTH",
   "INLINE_COMMENT",
-  "MUlTILINE_COMMENT"
+  "MULTILINE_COMMENT"
   };
 }
 
