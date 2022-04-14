@@ -130,6 +130,7 @@ multistart = \/\*
 "!" { return symbol(sym.NOT); }
 "&&" { return symbol(sym.AND); }
 "." { return symbol(sym.PERIOD); }
+"<" { return symbol(sym.LESS_THAN); }
 
 
 /* delimiters */
@@ -163,6 +164,7 @@ multistart = \/\*
 "return" { return symbol(sym.RETURN); }
 "extends" { return symbol(sym.EXTENDS); }
 "length" { return symbol(sym.LENGTH); }
+"String" { return symbol(sym.STRING); }
 
 /* identifiers */
 {letter}({letter}|{digit}|_)* {

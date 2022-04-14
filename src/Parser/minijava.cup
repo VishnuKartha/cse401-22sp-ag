@@ -21,6 +21,7 @@ terminal PLUS, MINUS, TIMES, AND;
 terminal BECOMES;
 terminal NOT;
 terminal PERIOD;
+terminal LESS_THAN;
 
 /* delimiters */
 terminal LPAREN, RPAREN, SEMICOLON, COMMA;
@@ -50,6 +51,7 @@ terminal String THIS;
 terminal String RETURN;
 terminal String EXTENDS;
 terminal String LENGTH;
+terminal String STRING;
 
 /* Nonterminals (constructed by parser): */
 

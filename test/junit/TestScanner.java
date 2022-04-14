@@ -1,16 +1,16 @@
-import Parser.sym;
-import Scanner.scanner;
-import java_cup.runtime.ComplexSymbolFactory;
-import java_cup.runtime.Symbol;
-import org.junit.Test;
-
+import Scanner.*;
 import java.io.*;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import Parser.sym;
+import java_cup.runtime.Symbol;
+import java_cup.runtime.ComplexSymbolFactory;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.charset.Charset;
+
+import static org.junit.Assert.*;
+import org.junit.Test;
 
 /*
     This class shows one way to use JUnit for testing your compiler.
@@ -23,9 +23,9 @@ import static org.junit.Assert.fail;
     cases for Minijava.java itself rather than the underlying modules as is
     shown here.
 */
-public class TestDemoLanguageScanner {
+public class TestScanner {
 
-    public static final String TEST_FILES_LOCATION = "test/resources/DemoLanguageScanner/";
+    public static final String TEST_FILES_LOCATION = "test/resources/MiniJavaScanner/";
     public static final String TEST_FILES_INPUT_EXTENSION = ".java";
     public static final String TEST_FILES_EXPECTED_EXTENSION = ".expected";
 
@@ -60,8 +60,27 @@ public class TestDemoLanguageScanner {
         helper function above (and the given folder organization).
     */
     @Test
-    public void testSimpleArithmetic() {
-        runScannerTestCase("SimpleArithmetic");
+    public void testIdentifier() {
+        runScannerTestCase("Identifier");
     }
 
+    @Test
+    public void testBooleanExpressions() {
+        runScannerTestCase("BooleanExpressions");
+    }
+
+    @Test
+    public void testComments() {
+        runScannerTestCase("Comments");
+    }
+
+    @Test
+    public void testMethod() {
+        runScannerTestCase("Method");
+    }
+
+    @Test
+    public void testComplex() {
+        runScannerTestCase("Complex");
+    }
 }
