@@ -1,0 +1,8 @@
+CSE 401 22sp Project I - Scanner
+
+The scanner considers some MiniJava identifiers as keywords (e.g., "display" from the sample language). (-1)
+
+The scanner fails to recognize (or not, when appropriate) some syntactically subtle cases involving delimited comments (e.g., "/* /* ... */ */",
+"/*/ ... */", and "/***/"). Please see homework 1 sample solution for the correct regular expression to use. (-1)
+
+Total: 38/40
