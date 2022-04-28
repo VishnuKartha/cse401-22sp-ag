@@ -98,7 +98,7 @@ ClassDeclList ::= ClassDeclList: cd_list ClassDecl: c
                            {: cd_list.add(c);
                               RESULT = cd_list; :}
                            |
-                           {: RESULT = new ClassDeclList(txleft); :};
+                           {: RESULT = new ClassDeclList(new Location(-1, -1)); :};
 
 MethodDecl ::= PUBLIC Type:t Identifier:i LPAREN FormalList:f_list RPAREN LBRACE VarDeclList:
                                            v_list StatementList:s_list RETURN Exp:e SEMICOLON RBRACE
@@ -111,14 +111,14 @@ MethodDeclList ::= MethodDeclList: md_list MethodDecl: m
          {: md_list.add(m);
             RESULT = md_list; :}
          |
-         {: RESULT = new MethodDecl(txleft); :};
+         {: RESULT = new MethodDecl(new Location(-1, -1)); :};
 
 VarDecl ::= Type:t Identifier:i SEMICOLON
        {: RESULT = new VarDecl(t, i,  txleft); :};
 VarDeclList ::= VarDeclList: vd_list VarDecl: v
          {: vd_list.add(v);
             RESULT = vd_list; :}
-        | {: RESULT = new VarDeclList(vd_listxleft); :};
+        | {: RESULT = new VarDeclList(new Location(-1, -1)); :};
 Formal ::= Type:t Identifier:i
         {: RESULT = new Formal(t, i, txleft); :};
 FormalList ::= Formal:f1
@@ -160,7 +160,7 @@ Statement ::= LBRACE  StatementList:s RBRACE
 StatementList ::= StatementList: state_list Statement: s
          {: state_list.add(s);
             RESULT = state_list; :}
-        | {:RESULT = new StatementList(sxleft); :};
+        | {:RESULT = new StatementList(new Location(-1, -1)); :};
 
 
 Exp    ::= Exp: e1 AND Exp: e2
