@@ -120,7 +120,6 @@ multistart = \/\*
 /* Token definitions */
 
 /* reserved words (first so that they take precedence over identifiers) */
-"display" { return symbol(sym.DISPLAY); }
 
 /* operators */
 "+" { return symbol(sym.PLUS); }
@@ -187,7 +186,7 @@ multistart = \/\*
 /* Comments */
 {inline}[^{eol}]*{eol} {}
 
-{multistart}([^*]|[*]+[^/])*[*]+\/ {}
+{multistart}([^*]|([*]+[^/*]))*[*]+\/ {}
 
 
 
