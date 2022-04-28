@@ -23,11 +23,8 @@ public class DemoParser {
             // declarations in the CUP input file giving the type of the
             // root node, so we suppress warnings for the next assignment.
             @SuppressWarnings("unchecked")
-            List<Statement> program = (List<Statement>)root.value;
-            for (Statement statement: program) {
-                statement.accept(new PrettyPrintVisitor());
-                System.out.print("\n");
-            }
+            Program program = (Program) root.value;
+            program.accept(new PrettyPrintVisitor());
         } catch (Exception e) {
             // yuck: some kind of error in the compiler implementation
             // that we're not expecting (a bug!)

@@ -31,7 +31,7 @@ terminal String IDENTIFIER;
 /* types */
 terminal String INT;
 terminal String BOOLEAN;
-terminal Integer INTEGER_LITERAL;
+terminal String INTEGER_LITERAL;
 
 
 /* keywords */
@@ -90,9 +90,9 @@ Program ::= MainClass:mc ClassDeclList:cd
 MainClass  ::= CLASS Identifier:id1 LBRACE PUBLIC STATIC VOID MAIN LPAREN STRING LBRACKET
               	      RBRACKET Identifier:id2 RPAREN LBRACE Statement:s RBRACE RBRACE
                 {: RESULT =  new MainClass(id1, id2, s, id1xleft); :};
-ClassDecl ::= CLASS Identifier:i1 EXTENDS Identifier:i2 LBRACE VarDeclList:v_list MethodDeclList:md_list
+ClassDecl ::= CLASS Identifier:i1 EXTENDS Identifier:i2 LBRACE VarDeclList:v_list MethodDeclList:md_list RBRACE
             {: RESULT =  new ClassDeclExtends(i1,i2,v_list,md_list, i1xleft); :}
-          | CLASS Identifier:i1  LBRACE VarDeclList:v_list MethodDeclList:md_list
+          | CLASS Identifier:i1  LBRACE VarDeclList:v_list MethodDeclList:md_list RBRACE
                         {: RESULT =  new ClassDeclSimple(i1,v_list,md_list, i1xleft); :};
 ClassDeclList ::= ClassDeclList: cd_list ClassDecl: c
                            {: cd_list.add(c);
@@ -137,23 +137,22 @@ Type ::= INT:i LBRACKET RBRACKET
             {: RESULT = new IdentifierType(i, ixleft); :};
 
 Statement ::= LBRACE  StatementList:s RBRACE
-                {: RESULT = new Block(s, sxleft); :}
-            |IF LPAREN Exp:e RPAREN Statement:s1 ELSE Statement:s2
-                                {: RESULT = new If(e, s1, s2,exleft); :}
-            |SOUT Exp:e SEMICOLON
-                       {: RESULT = new Print(e, exleft); :}
-            | WHILE LPAREN Exp:e RPAREN Statement:s
-                 {: RESULT = new While(e, s, exleft); :}
-	        | Identifier:i BECOMES Exp:e SEMICOLON
-                              {: RESULT = new Assign(i, e, ixleft); :}
-            |  Identifier:i LBRACKET Exp:e1 RBRACKET BECOMES
-              			 Exp:e2 SEMICOLON
-                                         {: RESULT = new ArrayAssign(i, e1, e2, ixleft); :};
+    {: RESULT = new Block(s, sxleft); :}
+    |IF LPAREN Exp:e RPAREN Statement:s1 ELSE Statement:s2
+        {: RESULT = new If(e, s1, s2,exleft); :}
+    |SOUT LPAREN Exp:e RPAREN SEMICOLON
+        {: RESULT = new Print(e, exleft); :}
+    | WHILE LPAREN Exp:e RPAREN Statement:s
+         {: RESULT = new While(e, s, exleft); :}
+    | Identifier:i BECOMES Exp:e SEMICOLON
+        {: RESULT = new Assign(i, e, ixleft); :}
+    | Identifier:i LBRACKET Exp:e1 RBRACKET BECOMES Exp:e2 SEMICOLON
+        {: RESULT = new ArrayAssign(i, e1, e2, ixleft); :};
 
 
 StatementList ::= StatementList: state_list Statement: s
-         {: state_list.add(s);
-            RESULT = state_list; :}
+    {: state_list.add(s);
+        RESULT = state_list; :}
         | {:RESULT = new StatementList(new Location(-1, -1)); :};
 
 
@@ -171,12 +170,12 @@ Exp    ::= Exp: e1 AND Exp: e2
             {: RESULT = new ArrayLookup(e1, e2, e1xleft); :}
         | Exp:e1 PERIOD LENGTH
             {: RESULT = new ArrayLength(e1, e1xleft); :}
-        | Exp:e1 PERIOD Identifier:id LPAREN ExpList:expl RBRACKET
+        | Exp:e1 PERIOD Identifier:id LPAREN ExpList:expl RPAREN
             {: RESULT = new Call(e1, id, expl,e1xleft); :}
-        | Exp:e1 PERIOD Identifier:id LPAREN RBRACKET
+        | Exp:e1 PERIOD Identifier:id LPAREN RPAREN
             {: RESULT = new Call(e1, id,new ExpList(e1xleft),e1xleft); :}
         | INTEGER_LITERAL: i
-            {: RESULT = new IntegerLiteral(i, ixleft) ; :}
+            {: RESULT = new IntegerLiteral(Integer.parseInt(i), ixleft) ; :}
         | TRUE: t
             {: RESULT = new True(txleft) ; :}
         | FALSE: f
