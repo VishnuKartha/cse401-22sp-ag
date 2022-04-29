@@ -24,7 +24,7 @@ public class DemoParser {
             // root node, so we suppress warnings for the next assignment.
             @SuppressWarnings("unchecked")
             Program program = (Program) root.value;
-            program.accept(new PrettyPrintVisitor());
+            program.accept(new ASTVisitor());
         } catch (Exception e) {
             // yuck: some kind of error in the compiler implementation
             // that we're not expecting (a bug!)

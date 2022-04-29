@@ -13,10 +13,7 @@ abstract public class ASTNode {
     this.line_number = pos.getLine();
     this.ind_depth =0;
   }
-  public void increment_depth() {
-    ind_depth++;
-  }
-  public void decrrement_depth() {
-    ind_depth--;
+  public void set_depth(int d) {
+    ind_depth = d;
   }
 }

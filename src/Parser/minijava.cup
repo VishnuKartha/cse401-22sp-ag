@@ -122,7 +122,9 @@ VarDeclList ::= VarDeclList: vd_list VarDecl: v
 Formal ::= Type:t Identifier:i
         {: RESULT = new Formal(t, i, txleft); :};
 FormalList ::= Formal:f1
-          {: RESULT = new FormalList(f1xleft);:}
+          {: FormalList fl = new FormalList(f1xleft);
+                fl.add(f1);
+                 RESULT = fl; :}
         | FormalList: f_list COMMA Formal: f
          {: f_list.add(f);
             RESULT = f_list; :};

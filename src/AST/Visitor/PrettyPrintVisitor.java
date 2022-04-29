@@ -2,7 +2,7 @@ package AST.Visitor;
 
 import AST.*;
 
-// Sample print visitor from MiniJava web site with small modifications for UW CSE.
+// Sample print visitor from MiniJava website with small modifications for UW CSE.
 // HP 10/11
 
 public class PrettyPrintVisitor implements Visitor {

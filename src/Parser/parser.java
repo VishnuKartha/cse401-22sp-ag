@@ -588,7 +588,9 @@ class CUP$parser$actions {
 		Location f1xleft = ((java_cup.runtime.ComplexSymbolFactory.ComplexSymbol)CUP$parser$stack.peek()).xleft;
 		Location f1xright = ((java_cup.runtime.ComplexSymbolFactory.ComplexSymbol)CUP$parser$stack.peek()).xright;
 		Formal f1 = (Formal)((java_cup.runtime.Symbol) CUP$parser$stack.peek()).value;
-		 RESULT = new FormalList(f1xleft);
+		 FormalList fl = new FormalList(f1xleft);
+                fl.add(f1);
+                 RESULT = fl; 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("FormalList",9, ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;

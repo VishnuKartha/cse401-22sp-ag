@@ -2,6 +2,8 @@ package AST.Visitor;
 
 import AST.*;
 
+import javax.swing.plaf.nimbus.State;
+
 // Sample print visitor from MiniJava web site with small modifications for UW CSE.
 // HP 10/11
 
@@ -14,12 +16,13 @@ public class ASTVisitor implements Visitor {
     // MainClass m;
     // ClassDeclList cl;
     public void visit(Program n) {
-        n.m.accept(this);
-        system.out.println(("Program")
+        System.out.println("Program");
+        MainClass m = n.m;
+        m.set_depth(1);
+        m.accept(this);
         for ( int i = 0; i < n.cl.size(); i++ ) {
-            System.out.println();
             ClassDecl curr_node = n.cl.get(i);
-            curr_node.increment_depth();
+            curr_node.set_depth(1);
             curr_node.accept(this);
         }
     }
@@ -27,36 +30,40 @@ public class ASTVisitor implements Visitor {
     // Identifier i1,i2;
     // Statement s;
     public void visit(MainClass n) {
-        System.out.print("class ");
-        n.i1.accept(this);
-        System.out.println(" {");
-        System.out.print("  public static void main (String [] ");
-        n.i2.accept(this);
-        System.out.println(") {");
-        System.out.print("    ");
-        n.s.accept(this);
-        System.out.println("  }");
-        System.out.println("}");
+        for(int i =0; i < n.ind_depth; i++) System.out.print("  ");
+        System.out.print("MainClass " + n.i1.toString());
+        Identifier i1 = n.i1;
+        i1.set_depth(n.ind_depth + 1);
+        Identifier i2 = n.i2;
+        i2.set_depth(n.ind_depth + 1);
+        System.out.println();
+        Statement s = n.s;
+        s.set_depth(n.ind_depth + 1);
+        s.accept(this);
+        System.out.println();
     }
 
     // Identifier i;
     // VarDeclList vl;
     // MethodDeclList ml;
     public void visit(ClassDeclSimple n) {
-        System.out.print("class ");
-        n.i.accept(this);
-        System.out.println(" { ");
-        for ( int i = 0; i < n.vl.size(); i++ ) {
-            System.out.print("  ");
-            n.vl.get(i).accept(this);
-            if ( i+1 < n.vl.size() ) { System.out.println(); }
+        for(int i =0; i < n.ind_depth; i++) System.out.print("  ");
+        System.out.println("Class " + n.i.toString());
+        for(int i =0; i < n.ind_depth + 1; i++) System.out.print("  ");
+        System.out.println("fields:");
+        for (int i = 0; i < n.vl.size(); i++ ) {
+            VarDecl vd = n.vl.get(i);
+            vd.set_depth(n.ind_depth + 2);
+            vd.accept(this);
+            System.out.println();
         }
         for ( int i = 0; i < n.ml.size(); i++ ) {
-            System.out.println();
+            MethodDecl md = n.ml.get(i);
+            md.set_depth(n.ind_depth + 1);
             n.ml.get(i).accept(this);
+            System.out.println();
         }
         System.out.println();
-        System.out.println("}");
     }
 
     // Identifier i;
@@ -64,31 +71,31 @@ public class ASTVisitor implements Visitor {
     // VarDeclList vl;
     // MethodDeclList ml;
     public void visit(ClassDeclExtends n) {
-        System.out.print("class ");
-        n.i.accept(this);
-        System.out.println(" extends ");
-        n.j.accept(this);
-        System.out.println(" { ");
-        for ( int i = 0; i < n.vl.size(); i++ ) {
-            System.out.print("  ");
-            n.vl.get(i).accept(this);
-            if ( i+1 < n.vl.size() ) { System.out.println(); }
+        for(int i =0; i < n.ind_depth; i++) System.out.print("  ");
+        System.out.print("Class " + n.i.toString());
+        System.out.println(" extends " + n.j.toString());
+        for(int i =0; i < n.ind_depth + 1; i++) System.out.print("  ");
+        System.out.println("fields:");
+        for (int i = 0; i < n.vl.size(); i++ ) {
+            VarDecl vd = n.vl.get(i);
+            vd.set_depth(n.ind_depth + 2);
+            vd.accept(this);
+            System.out.println();
         }
         for ( int i = 0; i < n.ml.size(); i++ ) {
-            System.out.println();
+            MethodDecl md = n.ml.get(i);
+            md.set_depth(n.ind_depth + 1);
             n.ml.get(i).accept(this);
         }
-        System.out.println();
-        System.out.println("}");
     }
 
     // Type t;
     // Identifier i;
     public void visit(VarDecl n) {
+        for(int i =0; i < n.ind_depth; i++) System.out.print("  ");
         n.t.accept(this);
         System.out.print(" ");
         n.i.accept(this);
-        System.out.print(";");
     }
 
     // Type t;
@@ -98,42 +105,50 @@ public class ASTVisitor implements Visitor {
     // StatementList sl;
     // Exp e;
     public void visit(MethodDecl n) {
-        System.out.print("  public ");
+        for(int i = 0; i < n.ind_depth; i++) System.out.print("  ");
+        System.out.println("MethodDecl " + n.i.toString());
+        for(int i = 0; i < n.ind_depth + 1; i++) System.out.print("  ");
+        System.out.print("returns ");
         n.t.accept(this);
-        System.out.print(" ");
-        n.i.accept(this);
-        System.out.print(" (");
+        System.out.println();
+        for(int i = 0; i < n.ind_depth + 1; i++) System.out.print("  ");
+        System.out.println("parameters:");
         for ( int i = 0; i < n.fl.size(); i++ ) {
-            n.fl.get(i).accept(this);
-            if (i+1 < n.fl.size()) { System.out.print(", "); }
+            Formal f = n.fl.get(i);
+            f.set_depth(n.ind_depth + 2);
+            f.accept(this);
+            System.out.println();
         }
-        System.out.println(") { ");
+        for(int i = 0; i < n.ind_depth + 1; i++) System.out.print("  ");
+        System.out.println("variables:");
         for ( int i = 0; i < n.vl.size(); i++ ) {
-            System.out.print("    ");
+            VarDecl vd = n.vl.get(i);
+            vd.set_depth(n.ind_depth + 2);
             n.vl.get(i).accept(this);
-            System.out.println("");
+            System.out.println();
         }
         for ( int i = 0; i < n.sl.size(); i++ ) {
-            System.out.print("    ");
-            n.sl.get(i).accept(this);
-            if ( i < n.sl.size() ) { System.out.println(""); }
+            Statement s = n.sl.get(i);
+            s.set_depth(n.ind_depth + 1);
+            s.accept(this);
         }
-        System.out.print("    return ");
+        System.out.println();
+        for(int i = 0; i < n.ind_depth + 1; i++) System.out.print("  ");
+        System.out.print("Return ");
         n.e.accept(this);
-        System.out.println(";");
-        System.out.print("  }");
     }
 
     // Type t;
     // Identifier i;
     public void visit(Formal n) {
+        for(int i = 0; i < n.ind_depth; i++) System.out.print("  ");
         n.t.accept(this);
         System.out.print(" ");
         n.i.accept(this);
     }
 
     public void visit(IntArrayType n) {
-        System.out.print("int []");
+        System.out.print("int[]");
     }
 
     public void visit(BooleanType n) {
@@ -151,42 +166,50 @@ public class ASTVisitor implements Visitor {
 
     // StatementList sl;
     public void visit(Block n) {
-        System.out.println("{ ");
+        for(int i =0; i < n.ind_depth; i++) System.out.print("  ");
         for ( int i = 0; i < n.sl.size(); i++ ) {
-            System.out.print("      ");
-            n.sl.get(i).accept(this);
+            Statement s = n.sl.get(i);
+            s.set_depth(n.ind_depth + 1);
+            s.accept(this);
             System.out.println();
         }
-        System.out.print("    } ");
+
     }
 
     // Exp e;
     // Statement s1,s2;
     public void visit(If n) {
-        System.out.print("if (");
+        for(int i =0; i < n.ind_depth; i++) System.out.print("  ");
+        System.out.print("if ");
         n.e.accept(this);
-        System.out.println(") ");
-        System.out.print("    ");
-        n.s1.accept(this);
+        Statement s1 = n.s1;
+        s1.set_depth(n.ind_depth + 1);
         System.out.println();
-        System.out.print("    else ");
-        n.s2.accept(this);
+        s1.accept(this);
+        for(int i =0; i < n.ind_depth; i++) System.out.print("  ");
+        System.out.print("else ");
+        Statement s2 = n.s2;
+        s2.set_depth(n.ind_depth + 1);
+        System.out.println();
+        s2.accept(this);
     }
 
     // Exp e;
     // Statement s;
     public void visit(While n) {
-        System.out.print("while (");
+        System.out.print("while ");
         n.e.accept(this);
-        System.out.print(") ");
+        System.out.print("");
         n.s.accept(this);
     }
 
     // Exp e;
     public void visit(Print n) {
-        System.out.print("System.out.println(");
-        n.e.accept(this);
-        System.out.print(");");
+        for(int i = 0; i < n.ind_depth; i++) System.out.print("  ");
+        System.out.println("Print ");
+        Exp e = n.e;
+        e.set_depth(n.ind_depth + 1);
+        e.accept(this);
     }
 
     // Identifier i;
@@ -195,7 +218,6 @@ public class ASTVisitor implements Visitor {
         n.i.accept(this);
         System.out.print(" = ");
         n.e.accept(this);
-        System.out.print(";");
     }
 
     // Identifier i;
@@ -229,6 +251,7 @@ public class ASTVisitor implements Visitor {
 
     // Exp e1,e2;
     public void visit(Plus n) {
+        for(int i = 0; i < n.ind_depth; i++) System.out.print("  ");
         System.out.print("(");
         n.e1.accept(this);
         System.out.print(" + ");
@@ -238,6 +261,7 @@ public class ASTVisitor implements Visitor {
 
     // Exp e1,e2;
     public void visit(Minus n) {
+        for(int i = 0; i < n.ind_depth; i++) System.out.print("  ");
         System.out.print("(");
         n.e1.accept(this);
         System.out.print(" - ");
@@ -247,6 +271,7 @@ public class ASTVisitor implements Visitor {
 
     // Exp e1,e2;
     public void visit(Times n) {
+        for(int i = 0; i < n.ind_depth; i++) System.out.print("  ");
         System.out.print("(");
         n.e1.accept(this);
         System.out.print(" * ");
@@ -272,6 +297,7 @@ public class ASTVisitor implements Visitor {
     // Identifier i;
     // ExpList el;
     public void visit(Call n) {
+        for(int i = 0; i < n.ind_depth; i++) System.out.print("  ");
         n.e.accept(this);
         System.out.print(".");
         n.i.accept(this);
