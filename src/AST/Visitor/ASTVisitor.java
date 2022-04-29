@@ -15,9 +15,12 @@ public class ASTVisitor implements Visitor {
     // ClassDeclList cl;
     public void visit(Program n) {
         n.m.accept(this);
+        system.out.println(("Program")
         for ( int i = 0; i < n.cl.size(); i++ ) {
             System.out.println();
-            n.cl.get(i).accept(this);
+            ClassDecl curr_node = n.cl.get(i);
+            curr_node.increment_depth();
+            curr_node.accept(this);
         }
     }
 
