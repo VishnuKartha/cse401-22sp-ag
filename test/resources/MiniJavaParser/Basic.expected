@@ -1,0 +1,7 @@
+Program
+  MainClass Foo
+    =
+      a
+      +
+        a
+        1

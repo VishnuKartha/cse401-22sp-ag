@@ -1,3 +1,7 @@
+import AST.Program;
+import AST.Visitor.ASTVisitor;
+import AST.Visitor.PrettyPrintVisitor;
+import Parser.parser;
 import Parser.sym;
 import Scanner.scanner;
 import java_cup.runtime.ComplexSymbolFactory;
@@ -8,13 +12,13 @@ import java.util.Objects;
 
 public class MiniJava {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
+        ComplexSymbolFactory sf = new ComplexSymbolFactory();
+        Reader in = new BufferedReader(new FileReader(args[1]));
+        scanner s = new scanner(in, sf);
         if(Objects.equals(args[0], "-S")){
             try {
                 // create a scanner on the input file
-                ComplexSymbolFactory sf = new ComplexSymbolFactory();
-                Reader in = new BufferedReader(new FileReader(args[1]));
-                scanner s = new scanner(in, sf);
                 Symbol t = s.next_token();
                 boolean valid = true;
                 while (t.sym != sym.EOF) {
@@ -34,6 +38,34 @@ public class MiniJava {
                 // print out a stack dump
                 e.printStackTrace();
                 System.exit(1);
+            }
+        }else if(Objects.equals(args[0], "-P")){
+            try {
+                // create a scanner on the input file
+                parser p = new parser(s, sf);
+                Symbol root;
+                root = p.parse();
+                @SuppressWarnings("unchecked")
+                Program program = (Program) root.value;
+                program.accept(new PrettyPrintVisitor());
+            } catch (Exception e) {
+                System.err.println("Unexpected internal compiler error: " +
+                        e.toString());
+                e.printStackTrace();
+            }
+        }else if(Objects.equals(args[0], "-A")){
+            try {
+                // create a scanner on the input file
+                parser p = new parser(s, sf);
+                Symbol root;
+                root = p.parse();
+                @SuppressWarnings("unchecked")
+                Program program = (Program) root.value;
+                program.accept(new ASTVisitor());
+            } catch (Exception e) {
+                System.err.println("Unexpected internal compiler error: " +
+                        e.toString());
+                e.printStackTrace();
             }
         }
 

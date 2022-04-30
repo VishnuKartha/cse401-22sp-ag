@@ -1,14 +1,15 @@
 class Foo {
     public static void main(String[] args) {
-        a = a + 1;
-        a = a * 2;
+        System.out.println(5 + 4 * 3 - 1);
     }
 }
 class Bar extends Nothing {
     int i;
-    public int bar() {
-        int a;
-        a = a + 1;
-        return a;
+    public int bar(Baz f, Bar b) {
+        int j;
+        j = 1;
+        i = j.length;
+        System.out.println(new Thing().method());
+        return 5;
     }
 }
