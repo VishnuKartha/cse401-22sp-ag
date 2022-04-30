@@ -86,7 +86,7 @@
   <target name="demo-parser" depends="compile">
     <java classname="DemoParser" classpath="build/classes;lib/java-cup-11b.jar"
           fork="true"
-          input="SamplePrograms/Example.java">
+          input="SamplePrograms/SampleMiniJavaPrograms/BinaryTree.java">
       <assertions> <enable/> </assertions>
     </java>
   </target>

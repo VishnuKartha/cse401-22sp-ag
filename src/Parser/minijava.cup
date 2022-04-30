@@ -33,7 +33,6 @@ terminal String INT;
 terminal String BOOLEAN;
 terminal String INTEGER_LITERAL;
 
-
 /* keywords */
 terminal String TRUE, FALSE;
 terminal String CLASS;
@@ -48,7 +47,6 @@ terminal String LENGTH;
 terminal String STRING;
 
 /* Nonterminals (constructed by parser): */
-
 nonterminal Program Program;
 nonterminal MainClass MainClass;
 nonterminal ClassDecl ClassDecl;
@@ -66,24 +64,19 @@ nonterminal Statement Statement;
 nonterminal StatementList StatementList;
 nonterminal Exp Exp;
 nonterminal ExpList ExpList;
-
 nonterminal Identifier Identifier;
 
-
 /* Precedence declarations: */
-
 precedence left LESS_THAN;
-precedence left PLUS;
 precedence left MINUS;
+precedence left PLUS;
 precedence left TIMES;
 precedence left AND;
 precedence left NOT;
+precedence nonassoc PERIOD;
 precedence nonassoc IDENTIFIER;
 
-
-
 /* Productions: */
-
 Program ::= MainClass:mc ClassDeclList:cd
         {: RESULT = new Program(mc, cd, mcxleft); :};
 
@@ -101,11 +94,11 @@ ClassDeclList ::= ClassDeclList: cd_list ClassDecl: c
                            {: RESULT = new ClassDeclList(new Location(-1, -1)); :};
 
 MethodDecl ::= PUBLIC Type:t Identifier:i LPAREN FormalList:f_list RPAREN LBRACE VarDeclList:
-                                           v_list StatementList:s_list RETURN Exp:e SEMICOLON RBRACE
+                    v_list StatementList:s_list RETURN Exp:e SEMICOLON RBRACE
                   {:RESULT = new MethodDecl(t,i,f_list,v_list,s_list,e,txleft); :}
-                  |PUBLIC Type:t Identifier:i LPAREN  RPAREN LBRACE VarDeclList:
-                                                              v_list StatementList:s_list RETURN Exp:e SEMICOLON RBRACE
-                                     {:RESULT = new MethodDecl(t,i,new FormalList(txleft),v_list,s_list,e,txleft); :};
+                  |PUBLIC Type:t Identifier:i LPAREN RPAREN LBRACE VarDeclList:
+                        v_list StatementList:s_list RETURN Exp:e SEMICOLON RBRACE
+                            {:RESULT = new MethodDecl(t,i,new FormalList(txleft),v_list,s_list,e,txleft); :};
 
 MethodDeclList ::= MethodDeclList: md_list MethodDecl: m
          {: md_list.add(m);
@@ -138,7 +131,7 @@ Type ::= INT:i LBRACKET RBRACKET
         | IDENTIFIER:i
             {: RESULT = new IdentifierType(i, ixleft); :};
 
-Statement ::= LBRACE  StatementList:s RBRACE
+Statement ::= LBRACE StatementList:s RBRACE
     {: RESULT = new Block(s, sxleft); :}
     |IF LPAREN Exp:e RPAREN Statement:s1 ELSE Statement:s2
         {: RESULT = new If(e, s1, s2,exleft); :}
@@ -151,14 +144,12 @@ Statement ::= LBRACE  StatementList:s RBRACE
     | Identifier:i LBRACKET Exp:e1 RBRACKET BECOMES Exp:e2 SEMICOLON
         {: RESULT = new ArrayAssign(i, e1, e2, ixleft); :};
 
-
-StatementList ::= StatementList: state_list Statement: s
+StatementList ::= Statement:s StatementList:state_list
     {: state_list.add(s);
         RESULT = state_list; :}
         | {:RESULT = new StatementList(new Location(-1, -1)); :};
 
-
-Exp    ::= Exp: e1 AND Exp: e2
+Exp ::= Exp: e1 AND Exp: e2
             {: RESULT = new And(e1, e2, e1xleft); :}
         | Exp:e1 LESS_THAN Exp:e2
             {: RESULT = new LessThan(e1, e2, e1xleft); :}
@@ -195,12 +186,12 @@ Exp    ::= Exp: e1 AND Exp: e2
         | LPAREN Exp:e RPAREN
             {: RESULT = e; :};
 ExpList ::= Exp:e1
-          {: RESULT = new ExpList(e1xleft);:}
+          {: ExpList el = new ExpList(e1xleft);
+            el.add(e1);
+          RESULT = el;:}
         | ExpList: exp_list COMMA Exp: e
          {: exp_list.add(e);
             RESULT = exp_list; :};
 
 Identifier  ::= IDENTIFIER:id
                 {: RESULT = new Identifier(id, idxleft); :};
-
-

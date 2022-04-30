@@ -13,7 +13,7 @@ public class StatementList extends ASTNode {
    }
 
    public void add(Statement n) {
-      list.add(n);
+      list.add(0,n);
    }
 
    public Statement get(int i)  { 
