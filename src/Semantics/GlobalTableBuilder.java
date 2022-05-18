@@ -2,28 +2,41 @@ package Semantics;
 
 import AST.*;
 import AST.Visitor.Visitor;
-import Types.PrimitiveType;
+import Types.ClassType;
+import Types.MiniJavaType;
 
-public class TypeChecker implements Visitor {
+import java.util.Map;
+
+public class GlobalTableBuilder implements Visitor {
+
+    public SymbolTable globalTable;
+
+    public SymbolTable getGlobal(){
+        return globalTable;
+    }
 
     @Override
     public void visit(Program n) {
-
+        globalTable = new SymbolTable("global", null);
+        n.m.accept(this);
+        for(int i = 0; i < n.cl.size(); i++){
+            n.cl.get(i).accept(this);
+        }
     }
 
     @Override
     public void visit(MainClass n) {
-
+        createClassTable(n.i1.s,n.i1.type);
     }
 
     @Override
     public void visit(ClassDeclSimple n) {
-
+        createClassTable(n.i.s, n.i.type);
     }
 
     @Override
     public void visit(ClassDeclExtends n) {
-
+        createClassTable(n.i.s, n.i.type);
     }
 
     @Override
@@ -133,17 +146,17 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(IntegerLiteral n) {
-        n.type = PrimitiveType.INT;
+
     }
 
     @Override
     public void visit(True n) {
-        n.type = PrimitiveType.BOOLEAN;
+
     }
 
     @Override
     public void visit(False n) {
-        n.type = PrimitiveType.BOOLEAN;
+
     }
 
     @Override
@@ -174,5 +187,13 @@ public class TypeChecker implements Visitor {
     @Override
     public void visit(Identifier n) {
 
+    }
+
+    private void createClassTable(String classId, MiniJavaType classType){
+        SymbolTable classTable = new SymbolTable(classId, globalTable);
+        ((ClassType) classType).classTable = classTable;
+
+        globalTable.addMapping(classId, new SymbolTable.Mapping(classId, globalTable.name, classType));
+        globalTable.addPointer(classId, classTable);
     }
 }

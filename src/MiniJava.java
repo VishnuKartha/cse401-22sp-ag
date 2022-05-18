@@ -67,6 +67,8 @@ public class MiniJava {
                         e.toString());
                 e.printStackTrace();
             }
+        }else if(Objects.equals(args[0], "-T")){
+
         }
 
     }

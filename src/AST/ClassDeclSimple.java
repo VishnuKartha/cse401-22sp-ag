@@ -1,6 +1,7 @@
 package AST;
 
 import AST.Visitor.Visitor;
+import Types.ClassType;
 import java_cup.runtime.ComplexSymbolFactory.Location;
 
 public class ClassDeclSimple extends ClassDecl {
@@ -12,6 +13,7 @@ public class ClassDeclSimple extends ClassDecl {
                          Location pos) {
     super(pos);
     i=ai; vl=avl; ml=aml;
+    i.type = new ClassType(null, i.toString(), null);
   }
 
   public void accept(Visitor v) {

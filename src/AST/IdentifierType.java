@@ -1,15 +1,16 @@
 package AST;
 
 import AST.Visitor.Visitor;
-import Semantics.TypeInfo;
+import Types.ClassType;
 import java_cup.runtime.ComplexSymbolFactory.Location;
 
 public class IdentifierType extends Type {
   public String s;
 
   public IdentifierType(String as, Location pos) {
-    super(TypeInfo.CLASS, pos);
+    super(pos);
     s=as;
+    super.type = new ClassType(null,as,null);
   }
 
   public void accept(Visitor v) {

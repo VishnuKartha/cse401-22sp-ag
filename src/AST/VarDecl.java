@@ -10,6 +10,7 @@ public class VarDecl extends ASTNode {
   public VarDecl(Type at, Identifier ai, Location pos) {
     super(pos);
     t=at; i=ai;
+    i.type = t.type;
   }
 
   public void accept(Visitor v) {

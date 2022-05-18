@@ -3,8 +3,7 @@ package AST.Visitor;
 import AST.*;
 
 public interface Visitor {
-  // Display added for toy example language.  Not used in MiniJava AST
-  public void visit(Display n);
+
   public void visit(Program n);
   public void visit(MainClass n);
   public void visit(ClassDeclSimple n);
