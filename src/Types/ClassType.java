@@ -38,7 +38,7 @@ public class ClassType extends MiniJavaType{
             if(superClass.equals(type)){
                 return true;
             }
-            SymbolTable.Mapping m = classTable.superClassTable.get(superClass);
+            SymbolTable.Mapping m = classTable.prevScope.get(superClass);
             ClassType otherSuper = (ClassType) m.type;
             superClass = otherSuper.superType;
         }

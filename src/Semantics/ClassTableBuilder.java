@@ -46,11 +46,8 @@ public class ClassTableBuilder implements Visitor {
                 new ArrayList<>());
         class_t.addMapping("main", new SymbolTable.Mapping("main", n.i1.s, method_type));
         class_t.addPointer("main", method_t);
-        // ... main(String[] args) { ...
-//        THIRD PASS
-//        method_t.addMapping(n.i2.s, new SymbolTable.Mapping(n.i2.s, "main", new ArrayType(
-//                new ClassType(null, "String", null))));
-        globalTable = globalTable.superClassTable;
+        method_t.addMapping(n.i2.s, new SymbolTable.Mapping(n.i2.s, "main", Undef.UNDEFINED));
+        globalTable = globalTable.prevScope;
     }
 
     @Override
@@ -63,12 +60,18 @@ public class ClassTableBuilder implements Visitor {
         for (int i = 0; i < n.vl.size(); i++) {
             n.vl.get(i).accept(this);
         }
-        globalTable = globalTable.superClassTable;
+        globalTable = globalTable.prevScope;
 
     }
 
     @Override
     public void visit(ClassDeclExtends n) {
+
+        SymbolTable.Mapping sup = globalTable.get(n.j.s);
+        if(sup.type == null){
+            System.out.println(n.j.s + " has not been defined at line " + n.line_number);
+        }
+
         globalTable = globalTable.pointers.get(n.i.s);
         for (int i = 0; i < n.ml.size(); i++) {
             n.ml.get(i).accept(this);
@@ -76,12 +79,17 @@ public class ClassTableBuilder implements Visitor {
         for (int i = 0; i < n.vl.size(); i++) {
             n.vl.get(i).accept(this);
         }
-        globalTable = globalTable.superClassTable;
+        globalTable = globalTable.prevScope;
 
     }
 
     @Override
     public void visit(VarDecl n) {
+        if(n.i.type instanceof ClassType){
+            ClassType ct = (ClassType) n.i.type;
+            SymbolTable.Mapping sT = top.get(ct.type);
+            n.i.type = sT.type;
+        }
         globalTable.addMapping(n.i.s, new SymbolTable.Mapping(n.i.s, globalTable.name, n.i.type));
         globalTable.addPointer(n.i.s, null);
     }
@@ -89,6 +97,20 @@ public class ClassTableBuilder implements Visitor {
     @Override
     public void visit(MethodDecl n) {
         SymbolTable methodtable = new SymbolTable(n.i.s,globalTable);
+        globalTable = methodtable;
+        for(int i =0; i < n.fl.size(); i++){
+            n.fl.get(i).accept(this);
+        }
+        for(int i =0; i < n.vl.size(); i++){
+            n.vl.get(i).accept(this);
+        }
+        MethodType mt = (MethodType) n.i.type;
+        if(mt.returnType instanceof ClassType){
+            ClassType ct = (ClassType) mt.returnType;
+            SymbolTable.Mapping sT = top.get(ct.type);
+            mt.returnType = sT.type;
+        }
+        globalTable = globalTable.prevScope;
         globalTable.addMapping(methodtable.name, new SymbolTable.Mapping(methodtable.name, globalTable.name, n.i.type));
         globalTable.addPointer(methodtable.name, methodtable);
 
@@ -96,7 +118,13 @@ public class ClassTableBuilder implements Visitor {
 
     @Override
     public void visit(Formal n) {
-
+        if(n.i.type instanceof ClassType){
+            ClassType ct = (ClassType) n.i.type;
+            SymbolTable.Mapping sT = top.get(ct.type);
+            n.t.type = sT.type;
+            n.i.type = sT.type;
+        }
+        globalTable.addMapping(n.i.s, new SymbolTable.Mapping(n.i.s, globalTable.name, n.i.type));
     }
 
     @Override

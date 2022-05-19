@@ -9,12 +9,12 @@ public class SymbolTable {
     public String name;
     public HashMap<String, Mapping> table;
     public HashMap<String, SymbolTable> pointers;
-    public SymbolTable superClassTable;
+    public SymbolTable prevScope;
 
     public SymbolTable(String n, SymbolTable prev){
         table = new HashMap<>();
         pointers = new HashMap<>();
-        superClassTable = prev;
+        prevScope = prev;
         name = n;
     }
 
@@ -39,7 +39,7 @@ public class SymbolTable {
             if(m != null){
                 return m;
             }
-            t = t.superClassTable;
+            t = t.prevScope;
         }
         return null;
     }
