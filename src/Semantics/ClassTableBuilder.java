@@ -10,19 +10,17 @@ import java.util.Map;
 public class ClassTableBuilder implements Visitor {
 
     public SymbolTable globalTable;
-    private boolean valid;
-
-    private SymbolTable top;
+    private SymbolTable topLevel;
     public SymbolTable getGlobal(){
         return globalTable;
     }
     public ClassTableBuilder(SymbolTable table) {
         this.globalTable = table;
-        top = table;
+        topLevel = table;
     }
 
-    public boolean valid() {
-        return valid;
+    public SymbolTable getGlobalTable(){
+        return globalTable;
     }
     @Override
     public void visit(Program n) {
@@ -87,7 +85,7 @@ public class ClassTableBuilder implements Visitor {
     public void visit(VarDecl n) {
         if(n.i.type instanceof ClassType){
             ClassType ct = (ClassType) n.i.type;
-            SymbolTable.Mapping sT = top.get(ct.type);
+            SymbolTable.Mapping sT = topLevel.get(ct.type);
             n.i.type = sT.type;
         }
         globalTable.addMapping(n.i.s, new SymbolTable.Mapping(n.i.s, globalTable.name, n.i.type));
@@ -107,7 +105,7 @@ public class ClassTableBuilder implements Visitor {
         MethodType mt = (MethodType) n.i.type;
         if(mt.returnType instanceof ClassType){
             ClassType ct = (ClassType) mt.returnType;
-            SymbolTable.Mapping sT = top.get(ct.type);
+            SymbolTable.Mapping sT = topLevel.get(ct.type);
             mt.returnType = sT.type;
         }
         globalTable = globalTable.prevScope;
@@ -120,7 +118,7 @@ public class ClassTableBuilder implements Visitor {
     public void visit(Formal n) {
         if(n.i.type instanceof ClassType){
             ClassType ct = (ClassType) n.i.type;
-            SymbolTable.Mapping sT = top.get(ct.type);
+            SymbolTable.Mapping sT = topLevel.get(ct.type);
             n.t.type = sT.type;
             n.i.type = sT.type;
         }

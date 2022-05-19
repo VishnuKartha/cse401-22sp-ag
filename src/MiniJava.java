@@ -4,6 +4,10 @@ import AST.Visitor.PrettyPrintVisitor;
 import Parser.parser;
 import Parser.sym;
 import Scanner.scanner;
+import Semantics.ClassTableBuilder;
+import Semantics.GlobalTableBuilder;
+import Semantics.InheritanceVisitor;
+import Semantics.TypeChecker;
 import java_cup.runtime.ComplexSymbolFactory;
 import java_cup.runtime.Symbol;
 
@@ -68,7 +72,25 @@ public class MiniJava {
                 e.printStackTrace();
             }
         }else if(Objects.equals(args[0], "-T")){
-
+            try {
+                // create a scanner on the input file
+                parser p = new parser(s, sf);
+                Symbol root;
+                root = p.parse();
+                @SuppressWarnings("unchecked")
+                Program program = (Program) root.value;
+                GlobalTableBuilder gt = new GlobalTableBuilder();
+                program.accept(gt);
+                ClassTableBuilder ct = new ClassTableBuilder(gt.getGlobal());
+                program.accept(ct);
+                InheritanceVisitor it = new InheritanceVisitor(ct.getGlobalTable());
+                program.accept(it);
+                program.accept(new TypeChecker(it.getGlobalTable()));
+            } catch (Exception e) {
+                System.err.println("Unexpected internal compiler error: " +
+                        e.toString());
+                e.printStackTrace();
+            }
         }
 
     }

@@ -8,11 +8,6 @@ import AST.*;
 public class PrettyPrintVisitor implements Visitor {
 
   // Display added for toy example language.  Not used in regular MiniJava
-  public void visit(Display n) {
-    System.out.print("display ");
-    n.e.accept(this);
-    System.out.print(";");
-  }
   
   // MainClass m;
   // ClassDeclList cl;

@@ -3,41 +3,79 @@ package Semantics;
 import AST.*;
 import AST.Visitor.Visitor;
 import Types.ClassType;
+import Types.MethodType;
 import Types.MiniJavaType;
+import Types.Undef;
 
-import java.util.Map;
+public class InheritanceVisitor implements Visitor {
 
-public class GlobalTableBuilder implements Visitor {
+    private SymbolTable globalTable;
+    private SymbolTable topLevel;
 
-    public SymbolTable globalTable;
-
-    public SymbolTable getGlobal(){
-        return globalTable;
+    public InheritanceVisitor(SymbolTable global){
+        globalTable = global;
+        topLevel = global;
     }
 
+    public SymbolTable getGlobalTable(){
+        return globalTable;
+    }
     @Override
     public void visit(Program n) {
-        System.out.println("Starting");
-        globalTable = new SymbolTable("global", null);
-        n.m.accept(this);
-        for(int i = 0; i < n.cl.size(); i++){
+        for(int i =0; i < n.cl.size(); i++){
             n.cl.get(i).accept(this);
         }
     }
 
     @Override
     public void visit(MainClass n) {
-        createClassTable(n.i1.s,n.i1.type);
+
     }
 
     @Override
     public void visit(ClassDeclSimple n) {
-        createClassTable(n.i.s, n.i.type);
+
     }
 
     @Override
     public void visit(ClassDeclExtends n) {
-        createClassTable(n.i.s, n.i.type);
+        globalTable = globalTable.pointers.get(n.i.s);
+        String superClassname = n.j.s;
+        SymbolTable superTable = topLevel.pointers.get(superClassname);
+        if(superTable == null){
+            return;
+        }
+        while(superClassname != null){
+            for(String c : superTable.table.keySet()){
+                if(!globalTable.table.containsKey(c)){
+                    if(superTable.get(c).type instanceof MethodType){
+                        MethodType mt = (MethodType) superTable.get(c).type;
+                        // MainClass method
+                        if(mt.returnType == Undef.UNDEFINED){
+                            continue;
+                        }
+                        globalTable.addMapping(c,superTable.get(c));
+                    }
+                }else{
+                    // Method overriding
+                    if(superTable.get(c).type instanceof MethodType){
+                        MethodType mtb = (MethodType) superTable.get(c).type;
+                        MethodType mta = (MethodType) globalTable.get(c).type;
+                        if(!mtb.assignable(mta)){
+                            System.out.println(c + " cannot be assigned to super class method on line " + n.line_number);
+                            globalTable.table.get(c).type = Undef.UNDEFINED;
+                        }
+                    }
+
+                }
+            }
+            ClassType superC = (ClassType) topLevel.table.get(superClassname).type;
+            superClassname = superC.superType;
+            superTable = topLevel.pointers.get(superClassname);
+        }
+
+        globalTable = globalTable.prevScope;
+
     }
 
     @Override
@@ -188,13 +226,5 @@ public class GlobalTableBuilder implements Visitor {
     @Override
     public void visit(Identifier n) {
 
-    }
-
-    private void createClassTable(String classId, MiniJavaType classType){
-        SymbolTable classTable = new SymbolTable(classId, globalTable);
-        ((ClassType) classType).classTable = classTable;
-
-        globalTable.addMapping(classId, new SymbolTable.Mapping(classId, globalTable.name, classType));
-        globalTable.addPointer(classId, classTable);
     }
 }
