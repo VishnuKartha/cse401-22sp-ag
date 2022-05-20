@@ -13,7 +13,6 @@ public class ClassDeclSimple extends ClassDecl {
                          Location pos) {
     super(pos);
     i=ai; vl=avl; ml=aml;
-    i.type = new ClassType(null, i.toString(), null);
   }
 
   public void accept(Visitor v) {

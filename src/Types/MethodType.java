@@ -1,6 +1,7 @@
 package Types;
 
 import AST.MethodDecl;
+import Semantics.SymbolTables.GlobalSymbolTable;
 
 import java.util.List;
 
@@ -10,8 +11,7 @@ public class MethodType extends MiniJavaType{
     public MiniJavaType returnType;
     public List<MiniJavaType> params;
 
-    public MethodType(String m, MiniJavaType rt, List<MiniJavaType> p){
-        method = m;
+    public MethodType(MiniJavaType rt, List<MiniJavaType> p){
         returnType = rt;
         params = p;
     }
@@ -33,7 +33,7 @@ public class MethodType extends MiniJavaType{
     }
 
     @Override
-    public boolean assignable(MiniJavaType o) {
+    public boolean assignable(MiniJavaType o, GlobalSymbolTable gT) {
         if(!(o instanceof MethodType)){
             return false;
         }
@@ -46,7 +46,7 @@ public class MethodType extends MiniJavaType{
                 return false;
             }
         }
-        return returnType.assignable(other.returnType);
+        return returnType.assignable(other.returnType, gT);
     }
 
     public void addParam(MiniJavaType type){

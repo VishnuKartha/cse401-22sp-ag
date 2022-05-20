@@ -12,7 +12,6 @@ public class MainClass extends ASTNode{
                    Location pos) {
     super(pos);
     i1=ai1; i2=ai2; s=as;
-    ai1.type = new ClassType(null,ai1.toString(),null);
   }
 
   public void accept(Visitor v) {

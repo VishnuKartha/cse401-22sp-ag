@@ -1,24 +1,28 @@
-package Semantics;
+package Semantics.TableBuilderVisitors;
 
 import AST.*;
 import AST.Visitor.Visitor;
+import Semantics.SymbolTables.ClassSymbolTable;
+import Semantics.SymbolTables.GlobalSymbolTable;
 import Types.ClassType;
 import Types.MiniJavaType;
 
-import java.util.Map;
-
 public class GlobalTableBuilder implements Visitor {
 
-    public SymbolTable globalTable;
+    private GlobalSymbolTable gT;
+    private boolean typeError;
 
-    public SymbolTable getGlobal(){
-        return globalTable;
+    public GlobalSymbolTable getGlobal(){
+        return gT;
+    }
+
+    public boolean errorStatus(){
+        return typeError;
     }
 
     @Override
     public void visit(Program n) {
-        System.out.println("Starting");
-        globalTable = new SymbolTable("global", null);
+        gT = new GlobalSymbolTable();
         n.m.accept(this);
         for(int i = 0; i < n.cl.size(); i++){
             n.cl.get(i).accept(this);
@@ -27,24 +31,23 @@ public class GlobalTableBuilder implements Visitor {
 
     @Override
     public void visit(MainClass n) {
-        createClassTable(n.i1.s,n.i1.type);
+        createClassTable(n.i1.s,null);
     }
 
     @Override
     public void visit(ClassDeclSimple n) {
-        createClassTable(n.i.s, n.i.type);
+        createClassTable(n.i.s, null);
     }
 
     @Override
     public void visit(ClassDeclExtends n) {
-        createClassTable(n.i.s, n.i.type);
+        createClassTable(n.i.s, n.j.s);
     }
 
     @Override
     public void visit(VarDecl n) {
 
     }
-
     @Override
     public void visit(MethodDecl n) {
 
@@ -190,11 +193,13 @@ public class GlobalTableBuilder implements Visitor {
 
     }
 
-    private void createClassTable(String classId, MiniJavaType classType){
-        SymbolTable classTable = new SymbolTable(classId, globalTable);
-        ((ClassType) classType).classTable = classTable;
-
-        globalTable.addMapping(classId, new SymbolTable.Mapping(classId, globalTable.name, classType));
-        globalTable.addPointer(classId, classTable);
+    private void createClassTable(String classId, String superId){
+        if(gT.classTypes.containsKey(classId)){
+            System.out.println("Class already defined");
+            typeError = true;
+            return;
+        }
+        gT.classTypes.put(classId, new ClassType(classId, superId));
+        gT.classTables.put(classId, new ClassSymbolTable(gT));
     }
 }

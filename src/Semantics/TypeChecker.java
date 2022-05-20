@@ -2,16 +2,25 @@ package Semantics;
 
 import AST.*;
 import AST.Visitor.Visitor;
+import Semantics.SymbolTables.ClassSymbolTable;
+import Semantics.SymbolTables.GlobalSymbolTable;
+import Semantics.SymbolTables.MethodSymbolTable;
+import Semantics.TableBuilderVisitors.GlobalTableBuilder;
 import Types.*;
 
-public class TypeChecker implements Visitor {
-    private SymbolTable globalTable;
-    private SymbolTable topLevel;
+import java.util.ArrayList;
+import java.util.HashSet;
 
-    public TypeChecker(SymbolTable global){
+public class TypeChecker implements Visitor {
+    private GlobalSymbolTable globalTable;
+    private String classScope;
+    private String methodScope;
+    private boolean typeError;
+
+    public TypeChecker(GlobalSymbolTable global){
        globalTable = global;
-       topLevel = global;
     }
+    public boolean errorStatus(){return typeError;}
     @Override
     public void visit(Program n) {
         n.m.accept(this);
@@ -22,27 +31,43 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(MainClass n) {
-        globalTable = globalTable.pointers.get(n.i1.s);
+        classScope = n.i1.s;
+        methodScope = "main";
         n.s.accept(this);
-        globalTable = globalTable.prevScope;
+        methodScope = null;
+        classScope = null;
     }
 
     @Override
     public void visit(ClassDeclSimple n) {
-        globalTable = globalTable.pointers.get(n.i.s);
+        classScope = n.i.s;
         for(int i = 0; i < n.ml.size(); i++){
             n.ml.get(i).accept(this);
         }
-        globalTable = globalTable.prevScope;
+        classScope = null;
     }
 
     @Override
     public void visit(ClassDeclExtends n) {
-        globalTable = globalTable.pointers.get(n.i.s);
+        classScope = n.i.s;
+        // check Inheritance
+        ClassType ct = globalTable.classTypes.get(classScope);
+        HashSet<String> visited = new HashSet<>();
+        visited.add(classScope);
+        while(ct.superType != null && globalTable.classTypes.containsKey(ct.superType)){
+            ct = globalTable.classTypes.get(ct.superType);
+            // Found cycle
+            if(visited.contains(ct.type)){
+                System.out.println("Invalid inheritance structure");
+                typeError = true;
+                return;
+            }
+            visited.add(ct.type);
+        }
         for(int i = 0; i < n.ml.size(); i++){
             n.ml.get(i).accept(this);
         }
-        globalTable = globalTable.prevScope;
+        classScope = null;
     }
 
     @Override
@@ -52,16 +77,48 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(MethodDecl n) {
-        MethodType mt = (MethodType) globalTable.get(n.i.s).type;
-        globalTable = globalTable.pointers.get(n.i.s);
+        String temp = classScope;
+        methodScope = n.i.s;
+        // Check if we can override
+        MethodType mta = globalTable.classTables.get(classScope).methods.get(methodScope);
+        ClassType ct = globalTable.classTypes.get(classScope);
+        boolean canOverride = true;
+        if(ct.superType != null){
+            // Might not have checked cyclicness
+            HashSet<String> visited = new HashSet<>();
+            visited.add(classScope);
+            while(ct.superType != null && !visited.contains(ct.superType) && globalTable.classTypes.containsKey(ct.superType)){
+                ct = globalTable.classTypes.get(ct.superType);
+                if(globalTable.classTables.get(ct.type).methods.containsKey(methodScope)){
+                    MethodType mtb = globalTable.classTables.get(ct.type).methods.get(methodScope);
+                    if(mta.returnType.assignable(mtb.returnType, globalTable) && mta.params.size() == mtb.params.size()){
+                        for(int i =0; i < mta.params.size(); i++){
+                            if(!mta.params.get(i).typeEquals(mtb.params.get(i))){
+                                canOverride = false;
+                            }
+                        }
+                        if(canOverride){
+                            classScope = ct.type;
+                        }
+                    }else{
+                        canOverride = false;
+                    }
+                }
+                visited.add(ct.type);
+            }
+        }
         for(int i =0; i < n.sl.size(); i++){
             n.sl.get(i).accept(this);
         }
         n.e.accept(this);
-        if(!mt.returnType.assignable(n.e.type)){
+        MethodType mType = globalTable.classTables.get(classScope).methods.get(methodScope);
+        if(!n.e.type.assignable(mType.returnType, globalTable)){
             System.out.println("Return type does not match at line " + n.line_number);
+            typeError = true;
         }
-        globalTable = globalTable.prevScope;
+        n.type = mType;
+        methodScope = null;
+        classScope = temp;
     }
 
     @Override
@@ -125,23 +182,48 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(Assign n) {
-        n.e.accept(this);
-        n.i.type = n.e.type;
-        if(globalTable.get(n.i.s).type.assignable(n.e.type)){
-            System.out.println("Expression is not assignable on line " + n.line_number);
+        MethodSymbolTable mt = globalTable.classTables.get(classScope).methodTables.get(methodScope);
+        MiniJavaType l = inheritIdentifier(n.i.s);
+        if(l == null){
+            System.out.println("Id was never declared on line " + n.line_number);
+            typeError = true;
+            n.type = Undef.UNDEFINED;
+            mt.vars.put(n.i.s, n.type);
         }
+        n.e.accept(this);
+        if(!n.e.type.assignable(l,globalTable)){
+            System.out.println("Expression cannot be assigned on line " + n.line_number);
+            typeError = true;
+            return;
+        }
+        n.i.type = n.e.type;
     }
 
     @Override
     public void visit(ArrayAssign n) {
+        MethodSymbolTable mt = globalTable.classTables.get(classScope).methodTables.get(methodScope);
+        MiniJavaType l = inheritIdentifier(n.i.s);
+        if(l == null){
+            System.out.println("Id was never declared on line " + n.line_number);
+            typeError = true;
+            n.type = Undef.UNDEFINED;
+            mt.vars.put(n.i.s, n.type);
+        }
+        if(!(l instanceof ArrayType)){
+            System.out.println("Id is not an array on line " + n.line_number);
+            typeError = true;
+            return;
+        }
         n.e1.accept(this);
-        if(!n.e1.type.typeEquals(PrimitiveType.INT)){
+        if(n.e1.type.typeEquals(PrimitiveType.INT)){
             System.out.println("Array index must be integer on line " + n.line_number);
+            typeError = true;
+            return;
         }
         n.e2.accept(this);
-        ArrayType aT = (ArrayType) globalTable.get(n.i.s).type;
-        if(!aT.element.assignable(n.e2.type)){
-            System.out.println("Expression not assignable to element type on line " + n.line_number);
+        if(n.e2.type.typeEquals(PrimitiveType.INT)){
+            System.out.println("Array value must be type integer on line " + n.line_number);
+            typeError = true;
         }
     }
 
@@ -152,6 +234,7 @@ public class TypeChecker implements Visitor {
         if(!(n.e1.type.typeEquals(PrimitiveType.BOOLEAN) && n.e2.type.typeEquals(PrimitiveType.BOOLEAN))){
             System.out.println("Both expressions must be booleans on line " + n.line_number);
             n.type = Undef.UNDEFINED;
+            typeError = true;
             return;
         }
         n.type = PrimitiveType.BOOLEAN;
@@ -161,9 +244,10 @@ public class TypeChecker implements Visitor {
     public void visit(LessThan n) {
         n.e1.accept(this);
         n.e2.accept(this);
-        if(!(n.e1.type.typeEquals(PrimitiveType.BOOLEAN) && n.e2.type.typeEquals(PrimitiveType.BOOLEAN))){
-            System.out.println("Both expressions must be booleans on line " + n.line_number);
+        if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
+            System.out.println("Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
+            typeError = true;
             return;
         }
         n.type = PrimitiveType.BOOLEAN;
@@ -176,6 +260,7 @@ public class TypeChecker implements Visitor {
         if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
             System.out.println("Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
+            typeError = true;
             return;
         }
         n.type = PrimitiveType.INT;
@@ -185,24 +270,26 @@ public class TypeChecker implements Visitor {
     public void visit(Minus n) {
         n.e1.accept(this);
         n.e2.accept(this);
-        if(!(n.e1.type.typeEquals(PrimitiveType.BOOLEAN) && n.e2.type.typeEquals(PrimitiveType.BOOLEAN))){
-            System.out.println("Both expressions must be booleans on line " + n.line_number);
+        if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
+            System.out.println("Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
+            typeError = false;
             return;
         }
-        n.type = PrimitiveType.BOOLEAN;
+        n.type = PrimitiveType.INT;
     }
 
     @Override
     public void visit(Times n) {
         n.e1.accept(this);
         n.e2.accept(this);
-        if(!(n.e1.type.typeEquals(PrimitiveType.BOOLEAN) && n.e2.type.typeEquals(PrimitiveType.BOOLEAN))){
-            System.out.println("Both expressions must be booleans on line " + n.line_number);
+        if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
+            System.out.println("Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
+            typeError = true;
             return;
         }
-        n.type = PrimitiveType.BOOLEAN;
+        n.type = PrimitiveType.INT;
     }
 
     @Override
@@ -211,6 +298,7 @@ public class TypeChecker implements Visitor {
         if(!(n.e1.type instanceof ArrayType)){
             System.out.println("Expression is not an array at line " + n.line_number);
             n.type = Undef.UNDEFINED;
+            typeError = true;
         }else{
             n.type = ((ArrayType) n.e1.type).element;
         }
@@ -218,7 +306,9 @@ public class TypeChecker implements Visitor {
         if(!n.e2.type.typeEquals(PrimitiveType.INT)){
             System.out.println("Array index must be an integer on line " + n.line_number);
             n.type = Undef.UNDEFINED;
+            typeError = true;
         }
+        n.type = PrimitiveType.INT;
 
     }
 
@@ -245,38 +335,34 @@ public class TypeChecker implements Visitor {
         if(!(n.e.type instanceof ClassType)){
             System.out.println("Expression must be a class on line " + n.line_number);
             n.type = Undef.UNDEFINED;
+            typeError = true;
             return;
         }
-        ClassType cT = (ClassType) n.e.type;
-        SymbolTable classTable = topLevel.pointers.get(cT.type);
-        SymbolTable.Mapping method = classTable.get(n.i.s);
-        if(method == null){
-            System.out.println("Method does not exist in class on line " + n.line_number);
-            n.type = Undef.UNDEFINED;
+        MethodType mt = inheritMethod(n.i.s);
+        if (mt == null){
+            System.out.println("Method does not exist on line " + n.line_number);
+            typeError = true;
             return;
         }
-        n.i.type = method.type;
-        if(!(method.type instanceof MethodType)){
-            System.out.println("Identifier is not a method on line " + n.line_number);
-            n.type = Undef.UNDEFINED;
-            return;
-        }
-        MethodType mT = (MethodType) method.type;
-        n.type = mT.returnType;
-
-        if(mT.params.size() != n.el.size()){
-            System.out.println("Numbers of arguments do not match on line " + n.line_number);
-            return;
-        }
-
-        for(int i = 0; i < mT.params.size(); i++){
+        n.type = mt.returnType;
+        ArrayList<MiniJavaType> pl = new ArrayList<>();
+        for(int i =0; i < n.el.size(); i++){
             n.el.get(i).accept(this);
-            MiniJavaType t = n.el.get(i).type;
-            if(!mT.params.get(i).assignable(t)){
-                System.out.println("Argument types do not match on line " + n.line_number);
-                n.type = Undef.UNDEFINED;
+            pl.add(n.el.get(i).type);
+        }
+        if(pl.size() != mt.params.size()){
+            System.out.println("Incorrect aount of args on line " + n.line_number);
+            typeError = true;
+            return;
+        }
+        for(int i = 0; i < mt.params.size(); i++){
+            if(!pl.get(i).assignable(mt.params.get(i),globalTable)){
+                System.out.println("Incorrect parameter types on line " + n.line_number);
+                typeError = true;
+                return;
             }
         }
+
 
     }
 
@@ -297,29 +383,21 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(IdentifierExp n) {
-        SymbolTable.Mapping m = globalTable.get(n.s);
-        if(m.type.typeEquals(Undef.UNDEFINED)){
-            System.out.println("Identifier not declared on line " + n.line_number);
+        MethodSymbolTable mt = globalTable.classTables.get(classScope).methodTables.get(methodScope);
+        MiniJavaType t = inheritIdentifier(n.s);
+        if(t == null){
+            System.out.println("Id was never declared on line " + n.line_number);
+            typeError = true;
             n.type = Undef.UNDEFINED;
+            mt.vars.put(n.s, n.type);
             return;
         }
-        n.type = m.type;
+        n.type = t;
     }
 
     @Override
     public void visit(This n) {
-        SymbolTable tempScope = globalTable;
-        while(globalTable.prevScope != null){
-            MiniJavaType t = globalTable.prevScope.table.get(globalTable.name).type;
-            if(t instanceof ClassType){
-                n.type = t;
-                globalTable = tempScope;
-                return;
-            }
-            globalTable = globalTable.prevScope;
-        }
-        globalTable = tempScope;
-        n.type = Undef.UNDEFINED;
+        n.type = globalTable.classTypes.get(classScope);
     }
 
     @Override
@@ -327,6 +405,7 @@ public class TypeChecker implements Visitor {
         n.e.accept(this);
         if(!n.e.type.typeEquals(PrimitiveType.INT)){
             System.out.println("Expression must be integer type on line "+ n.line_number);
+            typeError = true;
             return;
         }
         // only int arrays
@@ -335,18 +414,13 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(NewObject n) {
-        SymbolTable.Mapping m = topLevel.get(n.i.s);
-        if(m == null){
-            System.out.println("Object does not exist on line " + n.line_number);
-            return;
-        }
-
-        if(!(m.type instanceof ClassType)){
-            System.out.println("Identifier is not a class on line" + n.line_number);
+        if(!globalTable.classTypes.containsKey(n.i.s)){
+            System.out.println("Creating class that does not exist on line " + n.line_number);
+            typeError = true;
             n.type = Undef.UNDEFINED;
             return;
         }
-        n.type = m.type;
+        n.type = globalTable.classTypes.get(n.i.s);
     }
 
     @Override
@@ -355,6 +429,7 @@ public class TypeChecker implements Visitor {
         if(!(n.e.type.typeEquals(PrimitiveType.BOOLEAN))){
             System.out.println("Expression must have type boolean on line " + n.line_number);
             n.type = Undef.UNDEFINED;
+            typeError = true;
             return;
         }
         // boolean
@@ -365,4 +440,49 @@ public class TypeChecker implements Visitor {
     public void visit(Identifier n) {
 
     }
+
+    private MiniJavaType inheritIdentifier(String id){
+        ClassSymbolTable st = globalTable.classTables.get(classScope);
+        MethodSymbolTable mt = st.methodTables.get(methodScope);
+        if(mt.params.containsKey(id)){
+            return mt.params.get(id);
+        }
+        if(mt.vars.containsKey(id)){
+            return mt.vars.get(id);
+        }
+        // Couldn't find in current method scope
+        ClassType ct = globalTable.classTypes.get(classScope);
+        HashSet<String> visited= new HashSet<>();
+        visited.add(ct.type);
+        while(ct.superType != null && !visited.contains(ct.superType) && globalTable.classTypes.containsKey(ct.superType)){
+            ct = globalTable.classTypes.get(ct.superType);
+            st = globalTable.classTables.get(ct.type);
+            if(st.fields.containsKey(id)){
+                return st.fields.get(id);
+            }
+            visited.add(ct.type);
+        }
+        return null;
+    }
+
+    private MethodType inheritMethod(String id){
+        ClassSymbolTable ct = globalTable.classTables.get(classScope);
+        if(ct.methodTables.containsKey(id)){
+            return ct.methods.get(id);
+        }
+        // Method not in current class
+        ClassType cType = globalTable.classTypes.get(classScope);
+        HashSet<String> visited = new HashSet<>();
+        while(cType.superType != null && !visited.contains(cType.superType) && globalTable.classTypes.containsKey(cType.superType)){
+            cType = globalTable.classTypes.get(cType.superType);
+            ct = globalTable.classTables.get(cType.type);
+            if(ct.methodTables.containsKey(id)){
+                return ct.methods.get(id);
+            }
+            visited.add(cType.type);
+        }
+        return null;
+
+    }
+
 }

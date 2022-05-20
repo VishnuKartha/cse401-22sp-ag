@@ -4,9 +4,10 @@ import AST.Visitor.PrettyPrintVisitor;
 import Parser.parser;
 import Parser.sym;
 import Scanner.scanner;
-import Semantics.ClassTableBuilder;
-import Semantics.GlobalTableBuilder;
-import Semantics.InheritanceVisitor;
+import Semantics.SymbolTables.GlobalSymbolTable;
+import Semantics.TableBuilderVisitors.ClassTableBuilder;
+import Semantics.TableBuilderVisitors.GlobalTableBuilder;
+import Semantics.TableBuilderVisitors.MethodTableBuilder;
 import Semantics.TypeChecker;
 import java_cup.runtime.ComplexSymbolFactory;
 import java_cup.runtime.Symbol;
@@ -52,10 +53,12 @@ public class MiniJava {
                 @SuppressWarnings("unchecked")
                 Program program = (Program) root.value;
                 program.accept(new PrettyPrintVisitor());
+                System.exit(0);
             } catch (Exception e) {
                 System.err.println("Unexpected internal compiler error: " +
                         e.toString());
                 e.printStackTrace();
+                System.exit(1);
             }
         }else if(Objects.equals(args[0], "-A")){
             try {
@@ -79,17 +82,24 @@ public class MiniJava {
                 root = p.parse();
                 @SuppressWarnings("unchecked")
                 Program program = (Program) root.value;
+                boolean error = false;
                 GlobalTableBuilder gt = new GlobalTableBuilder();
                 program.accept(gt);
-                ClassTableBuilder ct = new ClassTableBuilder(gt.getGlobal());
+                error = gt.errorStatus();
+                GlobalSymbolTable gst = gt.getGlobal();
+                ClassTableBuilder ct = new ClassTableBuilder(gst);
                 program.accept(ct);
-                InheritanceVisitor it = new InheritanceVisitor(ct.getGlobalTable());
-                program.accept(it);
-                program.accept(new TypeChecker(it.getGlobalTable()));
+                gst = ct.getGlobalTable();
+                MethodTableBuilder mt = new MethodTableBuilder(gst);
+                program.accept(mt);
+                gst = mt.getGlobalTable();
+                program.accept(new TypeChecker(gst));
+                System.exit(error ? 0 : 1);
             } catch (Exception e) {
                 System.err.println("Unexpected internal compiler error: " +
                         e.toString());
                 e.printStackTrace();
+                System.exit(1);
             }
         }
 

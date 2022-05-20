@@ -1,18 +1,17 @@
 package Types;
 
-import Semantics.SymbolTable;
+import Semantics.SymbolTables.GlobalSymbolTable;
+
+import java.util.HashSet;
 
 public class ClassType extends MiniJavaType{
 
     public String type;
     public String superType;
 
-    public SymbolTable classTable;
-
-    public ClassType(SymbolTable table, String t, String st){
+    public ClassType(String t, String st){
         type = t;
-        classTable = table;
-        st = superType;
+        superType = st;
     }
     @Override
     public boolean typeEquals(MiniJavaType o) {
@@ -24,7 +23,7 @@ public class ClassType extends MiniJavaType{
     }
 
     @Override
-    public boolean assignable(MiniJavaType o) {
+    public boolean assignable(MiniJavaType o, GlobalSymbolTable gt) {
         if(!(o instanceof ClassType)){
             return false;
         }
@@ -33,14 +32,15 @@ public class ClassType extends MiniJavaType{
         if(sameType){
             return true;
         }
-        String superClass = other.superType;
-        while(superClass != null){
-            if(superClass.equals(type)){
+        HashSet<String> visited = new HashSet<>();
+        visited.add(type);
+        ClassType ct = gt.classTypes.get(superType);
+        while(ct != null && !visited.contains(superType)){
+            visited.add(ct.type);
+            if(ct.type.equals(other.type)){
                 return true;
             }
-            SymbolTable.Mapping m = classTable.prevScope.get(superClass);
-            ClassType otherSuper = (ClassType) m.type;
-            superClass = otherSuper.superType;
+            ct = gt.classTypes.get(ct.superType);
         }
         return false;
     }
