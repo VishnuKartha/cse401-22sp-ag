@@ -6,6 +6,11 @@ import java.io.*;
 import java.util.*;
 
 import Parser.sym;
+import Semantics.SymbolTables.GlobalSymbolTable;
+import Semantics.TableBuilderVisitors.ClassTableBuilder;
+import Semantics.TableBuilderVisitors.GlobalTableBuilder;
+import Semantics.TableBuilderVisitors.MethodTableBuilder;
+import Semantics.TypeChecker;
 import java_cup.runtime.Symbol;
 import java_cup.runtime.ComplexSymbolFactory;
 import java.nio.file.Paths;
@@ -17,7 +22,6 @@ import static org.junit.Assert.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /*
     This class shows one way to use JUnit for testing your compiler.
@@ -30,8 +34,9 @@ import org.junit.runner.RunWith;
     cases for Minijava.java itself rather than the underlying modules as is
     shown here.
 */
-public class TestParser {
-    public static final String TEST_FILES_LOCATION = "test/resources/MiniJavaParser/";
+public class TestSemantics {
+
+    public static final String TEST_FILES_LOCATION = "test/resources/MiniJavaSemantics/";
     public static final String TEST_FILES_INPUT_EXTENSION = ".java";
     public static final String TEST_FILES_EXPECTED_EXTENSION = ".expected";
 
@@ -53,11 +58,10 @@ public class TestParser {
         System.setOut(originalOut);
     }
 
-
     private void runScannerTestCase(String testCaseName) {
         try {
             FileInputStream input = new FileInputStream(TEST_FILES_LOCATION + testCaseName + TEST_FILES_INPUT_EXTENSION);
-            String expected = Files.readString(Paths.get(TEST_FILES_LOCATION, testCaseName + TEST_FILES_EXPECTED_EXTENSION), Charset.defaultCharset());
+            String expected = Files.readString(Paths.get(TEST_FILES_LOCATION, testCaseName + TEST_FILES_EXPECTED_EXTENSION));
 
             ComplexSymbolFactory sf = new ComplexSymbolFactory();
             Reader in = new BufferedReader(new InputStreamReader(input));
@@ -66,7 +70,17 @@ public class TestParser {
             Symbol root;
             root = p.parse();
             Program program = (Program) root.value;
-            program.accept(new ASTVisitor());
+            GlobalTableBuilder gt = new GlobalTableBuilder();
+            program.accept(gt);
+            GlobalSymbolTable gst = gt.getGlobal();
+            ClassTableBuilder ct = new ClassTableBuilder(gst);
+            program.accept(ct);
+            gst = ct.getGlobalTable();
+            MethodTableBuilder mt = new MethodTableBuilder(gst);
+            program.accept(mt);
+            gst = mt.getGlobalTable();
+            System.out.print(gst.toString());
+            program.accept(new TypeChecker(gst));
             assertEquals(expected,newOut.toString());
 
         } catch (Exception e) {
@@ -77,7 +91,8 @@ public class TestParser {
 
     @Test
     public void testBasic() {
-        runScannerTestCase("Basic");
+        runScannerTestCase("test");
     }
+
 
 }

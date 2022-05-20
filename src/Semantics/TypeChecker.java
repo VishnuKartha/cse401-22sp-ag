@@ -8,6 +8,7 @@ import Semantics.SymbolTables.MethodSymbolTable;
 import Semantics.TableBuilderVisitors.GlobalTableBuilder;
 import Types.*;
 
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -215,13 +216,13 @@ public class TypeChecker implements Visitor {
             return;
         }
         n.e1.accept(this);
-        if(n.e1.type.typeEquals(PrimitiveType.INT)){
+        if(!n.e1.type.typeEquals(PrimitiveType.INT)){
             System.out.println("Array index must be integer on line " + n.line_number);
             typeError = true;
             return;
         }
         n.e2.accept(this);
-        if(n.e2.type.typeEquals(PrimitiveType.INT)){
+        if(!n.e2.type.typeEquals(PrimitiveType.INT)){
             System.out.println("Array value must be type integer on line " + n.line_number);
             typeError = true;
         }
@@ -338,10 +339,11 @@ public class TypeChecker implements Visitor {
             typeError = true;
             return;
         }
-        MethodType mt = inheritMethod(n.i.s);
+        MethodType mt = inheritMethod(n.i.s, ((ClassType) n.e.type).type);
         if (mt == null){
             System.out.println("Method does not exist on line " + n.line_number);
             typeError = true;
+            n.type = Undef.UNDEFINED;
             return;
         }
         n.type = mt.returnType;
@@ -450,10 +452,14 @@ public class TypeChecker implements Visitor {
         if(mt.vars.containsKey(id)){
             return mt.vars.get(id);
         }
+        if(st.fields.containsKey(id)){
+            return st.fields.get(id);
+        }
         // Couldn't find in current method scope
         ClassType ct = globalTable.classTypes.get(classScope);
         HashSet<String> visited= new HashSet<>();
         visited.add(ct.type);
+        System.out.println(ct.type);
         while(ct.superType != null && !visited.contains(ct.superType) && globalTable.classTypes.containsKey(ct.superType)){
             ct = globalTable.classTypes.get(ct.superType);
             st = globalTable.classTables.get(ct.type);
@@ -465,8 +471,8 @@ public class TypeChecker implements Visitor {
         return null;
     }
 
-    private MethodType inheritMethod(String id){
-        ClassSymbolTable ct = globalTable.classTables.get(classScope);
+    private MethodType inheritMethod(String id, String c){
+        ClassSymbolTable ct = globalTable.classTables.get(c);
         if(ct.methodTables.containsKey(id)){
             return ct.methods.get(id);
         }

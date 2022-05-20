@@ -20,15 +20,17 @@ public class ClassSymbolTable {
 
     public String toString(int depth){
         StringBuilder sb = new StringBuilder();
-        for(int i =0; i < depth; i++) sb.append("\t");
+        for(int i =0; i < depth; i++) sb.append("  ");
         sb.append("fields:\n");
         for(String s : fields.keySet()){
-            sb.append(s);
+            for(int i =0; i < depth; i++) sb.append("  ");
+            sb.append(s).append(" of type ").append(fields.get(s).toString()).append("\n");
         }
-        for(int i =0; i < depth; i++) sb.append("\t");
+        for(int i =0; i < depth; i++) sb.append("  ");
         sb.append("methods:\n");
         for(String s : methodTables.keySet()){
-            for(int i =0; i < depth; i++) sb.append("\t");
+            for(int i =0; i < depth; i++) sb.append("  ");
+            sb.append(s).append("\n");
             sb.append(methodTables.get(s).toString(depth + 1));
         }
         return sb.toString();

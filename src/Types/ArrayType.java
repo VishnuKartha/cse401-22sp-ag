@@ -27,4 +27,8 @@ public class ArrayType extends MiniJavaType{
         ArrayType other = (ArrayType) o;
         return element.assignable(other.element, gst);
     }
+
+    public String toString(){
+        return element.toString() + " array";
+    }
 }

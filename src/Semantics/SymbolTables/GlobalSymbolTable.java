@@ -21,7 +21,7 @@ public class GlobalSymbolTable {
         StringBuilder sb = new StringBuilder();
         sb.append("Global\n");
         for(String s : classTables.keySet()){
-            sb.append("\t").append(s).append("\n");
+            sb.append("  ").append(s).append("\n");
             sb.append(classTables.get(s).toString(depth + 1));
         }
 

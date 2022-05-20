@@ -52,4 +52,8 @@ public class MethodType extends MiniJavaType{
     public void addParam(MiniJavaType type){
         params.add(type);
     }
+
+    public String toString(){
+        return "Method of return type " + returnType.toString();
+    }
 }

@@ -10,4 +10,6 @@ public abstract class MiniJavaType {
     // Return true if o is assignable to this
     public abstract boolean assignable(MiniJavaType o, GlobalSymbolTable gt);
 
+    public abstract String toString();
+
 }

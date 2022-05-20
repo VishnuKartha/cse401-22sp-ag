@@ -18,17 +18,17 @@ public class MethodSymbolTable {
 
     public String toString(int depth){
         StringBuilder sb = new StringBuilder();
-        for(int i =0; i < depth - 1; i++) sb.append("\t");
+        for(int i =0; i < depth; i++) sb.append("  ");
         sb.append("Parameters:\n");
         for(String s : params.keySet()){
-            for(int i =0; i < depth; i++) sb.append("\t");
-            sb.append(s).append("\n");
+            for(int i =0; i < depth; i++) sb.append("  ");
+            sb.append(s).append(" of type ").append(params.get(s).toString()).append("\n");
         }
-        for(int i =0; i < depth; i++) sb.append("\t");
+        for(int i =0; i < depth; i++) sb.append("  ");
         sb.append("Local Variables:\n");
         for(String s : vars.keySet()){
-            for(int i =0; i < depth; i++) sb.append("\t");
-            sb.append(s).append("\n");
+            for(int i =0; i < depth; i++) sb.append("  ");
+            sb.append(s).append(" of type ").append(vars.get(s).toString()).append("\n");
         }
         return sb.toString();
 

@@ -10,7 +10,6 @@ public class IdentifierType extends Type {
   public IdentifierType(String as, Location pos) {
     super(pos);
     s=as;
-    super.type = new ClassType(null,as,null);
   }
 
   public void accept(Visitor v) {

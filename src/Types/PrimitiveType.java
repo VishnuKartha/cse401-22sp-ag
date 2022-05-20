@@ -21,4 +21,8 @@ public class PrimitiveType extends MiniJavaType {
     public boolean assignable(MiniJavaType o, GlobalSymbolTable gst) {
         return o == this;
     }
+
+    public String toString(){
+        return type;
+    }
 }

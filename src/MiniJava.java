@@ -93,9 +93,15 @@ public class MiniJava {
                 MethodTableBuilder mt = new MethodTableBuilder(gst);
                 program.accept(mt);
                 gst = mt.getGlobalTable();
+                System.out.print(gst.toString());
                 program.accept(new TypeChecker(gst));
-                System.out.println(gst.toString());
-                System.exit(error ? 0 : 1);
+
+                if(error){
+                    System.exit(1);
+                }else{
+
+                    System.exit(0);
+                }
             } catch (Exception e) {
                 System.err.println("Unexpected internal compiler error: " +
                         e.toString());

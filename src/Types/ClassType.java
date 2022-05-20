@@ -44,4 +44,12 @@ public class ClassType extends MiniJavaType{
         }
         return false;
     }
+
+    public String toString(){
+        String s = type;
+        if(superType == null){
+            return s;
+        }
+        return s + " extends " + superType;
+    }
 }

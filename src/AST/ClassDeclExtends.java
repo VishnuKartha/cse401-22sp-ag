@@ -15,7 +15,6 @@ public class ClassDeclExtends extends ClassDecl {
                           Location pos) {
     super(pos);
     i=ai; j=aj; vl=avl; ml=aml;
-    i.type = new ClassType(null,i.toString(),j.toString());
   }
 
   public void accept(Visitor v) {
