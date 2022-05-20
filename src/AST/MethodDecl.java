@@ -24,7 +24,6 @@ public class MethodDecl extends ASTNode {
     for(int i =0; i < fl.size(); i++){
       params.add(fl.get(i).i.type);
     }
-    i.type = new MethodType(i.toString(), t.type, params);
   }
  
   public void accept(Visitor v) {

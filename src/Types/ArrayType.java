@@ -1,5 +1,7 @@
 package Types;
 
+import Semantics.SymbolTables.GlobalSymbolTable;
+
 public class ArrayType extends MiniJavaType{
 
     public MiniJavaType element;
@@ -18,11 +20,11 @@ public class ArrayType extends MiniJavaType{
     }
 
     @Override
-    public boolean assignable(MiniJavaType o) {
+    public boolean assignable(MiniJavaType o, GlobalSymbolTable gst) {
         if(!(o instanceof ArrayType)){
             return false;
         }
         ArrayType other = (ArrayType) o;
-        return element.assignable(other.element);
+        return element.assignable(other.element, gst);
     }
 }

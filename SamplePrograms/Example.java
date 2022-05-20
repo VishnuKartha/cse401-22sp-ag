@@ -4,4 +4,10 @@ class Foo {
     }
 }
 
+class A {
+    public int depth(int a, int b, int c){
+        return a;
+    }
+}
+
 

@@ -94,6 +94,7 @@ public class MiniJava {
                 program.accept(mt);
                 gst = mt.getGlobalTable();
                 program.accept(new TypeChecker(gst));
+                System.out.println(gst.toString());
                 System.exit(error ? 0 : 1);
             } catch (Exception e) {
                 System.err.println("Unexpected internal compiler error: " +

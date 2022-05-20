@@ -1,5 +1,7 @@
 package Types;
 
+import Semantics.SymbolTables.GlobalSymbolTable;
+
 public class PrimitiveType extends MiniJavaType {
 
     public static final PrimitiveType INT = new PrimitiveType("int");
@@ -16,7 +18,7 @@ public class PrimitiveType extends MiniJavaType {
     }
 
     @Override
-    public boolean assignable(MiniJavaType o) {
+    public boolean assignable(MiniJavaType o, GlobalSymbolTable gst) {
         return o == this;
     }
 }

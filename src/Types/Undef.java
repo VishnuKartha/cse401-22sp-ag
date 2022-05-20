@@ -1,5 +1,7 @@
 package Types;
 
+import Semantics.SymbolTables.GlobalSymbolTable;
+
 public class Undef extends MiniJavaType{
 
     public static final Undef UNDEFINED = new Undef("undefined");
@@ -13,7 +15,7 @@ public class Undef extends MiniJavaType{
     }
 
     @Override
-    public boolean assignable(MiniJavaType o) {
+    public boolean assignable(MiniJavaType o, GlobalSymbolTable gst) {
         return o == this;
     }
 }

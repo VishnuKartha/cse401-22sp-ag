@@ -15,4 +15,22 @@ public class MethodSymbolTable {
         vars = new HashMap<>();
         top = parent;
     }
+
+    public String toString(int depth){
+        StringBuilder sb = new StringBuilder();
+        for(int i =0; i < depth - 1; i++) sb.append("\t");
+        sb.append("Parameters:\n");
+        for(String s : params.keySet()){
+            for(int i =0; i < depth; i++) sb.append("\t");
+            sb.append(s).append("\n");
+        }
+        for(int i =0; i < depth; i++) sb.append("\t");
+        sb.append("Local Variables:\n");
+        for(String s : vars.keySet()){
+            for(int i =0; i < depth; i++) sb.append("\t");
+            sb.append(s).append("\n");
+        }
+        return sb.toString();
+
+    }
 }
