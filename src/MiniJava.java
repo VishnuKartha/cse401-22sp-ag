@@ -19,6 +19,44 @@ public class MiniJava {
 
     public static void main(String[] args) throws FileNotFoundException {
         ComplexSymbolFactory sf = new ComplexSymbolFactory();
+
+        if(args.length < 2){
+            Reader in = new BufferedReader(new FileReader(args[0]));
+            scanner s = new scanner(in, sf);
+            try {
+                // create a scanner on the input file
+                parser p = new parser(s, sf);
+                Symbol root;
+                root = p.parse();
+                @SuppressWarnings("unchecked")
+                Program program = (Program) root.value;
+                boolean error = false;
+                GlobalTableBuilder gt = new GlobalTableBuilder();
+                program.accept(gt);
+                error = gt.errorStatus();
+                GlobalSymbolTable gst = gt.getGlobal();
+                ClassTableBuilder ct = new ClassTableBuilder(gst);
+                program.accept(ct);
+                gst = ct.getGlobalTable();
+                MethodTableBuilder mt = new MethodTableBuilder(gst);
+                program.accept(mt);
+                gst = mt.getGlobalTable();
+                program.accept(new TypeChecker(gst));
+                if(error){
+                    System.exit(1);
+                }
+                CodeGenVisitor cgv = new CodeGenVisitor(gst);
+                program.accept(cgv);
+                System.out.print(cgv.getCodeGen());
+                System.exit(0);
+
+            } catch (Exception e) {
+                System.err.println("Unexpected internal compiler error: " +
+                        e.toString());
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
         Reader in = new BufferedReader(new FileReader(args[1]));
         scanner s = new scanner(in, sf);
         if(Objects.equals(args[0], "-S")){
@@ -93,15 +131,13 @@ public class MiniJava {
                 MethodTableBuilder mt = new MethodTableBuilder(gst);
                 program.accept(mt);
                 gst = mt.getGlobalTable();
-                System.out.print(gst.toString());
                 program.accept(new TypeChecker(gst));
-
                 if(error){
                     System.exit(1);
-                }else{
-
-                    System.exit(0);
                 }
+                System.out.print(gst.toString());
+                System.exit(0);
+
             } catch (Exception e) {
                 System.err.println("Unexpected internal compiler error: " +
                         e.toString());

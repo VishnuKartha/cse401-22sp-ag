@@ -16,20 +16,20 @@
 #    ./demo
 
     .text
-    .globl  asm_main    # label for "main" program
+    .globl  _asm_main    # label for "main" program
 
 # main function - print 5, then print fact(5)
-asm_main:
+_asm_main:
     pushq   %rbp        # prologue - save frame ptr
     movq    %rsp,%rbp   # no local vars - no additional stack
 
     movq    $5,%rdi     # System.out.println(5)
-    call    put
+    call    _put
 
     movq    $5,%rdi     # System.out.println(fact(5))
     call    fact
     movq    %rax,%rdi
-    call    put
+    call    _put
 
     movq    %rbp,%rsp   # epilogue - return
     popq    %rbp        # (could use leave instead of movq/popq)
