@@ -67,14 +67,15 @@ nonterminal ExpList ExpList;
 nonterminal Identifier Identifier;
 
 /* Precedence declarations: */
+precedence left AND;
+precedence left NOT;
 precedence left LESS_THAN;
 precedence left MINUS;
 precedence left PLUS;
 precedence left TIMES;
-precedence left AND;
-precedence left NOT;
 precedence nonassoc PERIOD;
 precedence nonassoc IDENTIFIER;
+precedence nonassoc LBRACKET;
 
 /* Productions: */
 Program ::= MainClass:mc ClassDeclList:cd

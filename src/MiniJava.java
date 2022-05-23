@@ -51,8 +51,7 @@ public class MiniJava {
                 System.exit(0);
 
             } catch (Exception e) {
-                System.err.println("Unexpected internal compiler error: " +
-                        e.toString());
+                System.err.println("Unexpected internal compiler error: ");
                 e.printStackTrace();
                 System.exit(1);
             }
@@ -88,13 +87,13 @@ public class MiniJava {
                 parser p = new parser(s, sf);
                 Symbol root;
                 root = p.parse();
+                p.error_sym();
                 @SuppressWarnings("unchecked")
                 Program program = (Program) root.value;
                 program.accept(new PrettyPrintVisitor());
                 System.exit(0);
             } catch (Exception e) {
-                System.err.println("Unexpected internal compiler error: " +
-                        e.toString());
+                System.err.println("Unexpected internal compiler error: ");
                 e.printStackTrace();
                 System.exit(1);
             }
@@ -107,10 +106,11 @@ public class MiniJava {
                 @SuppressWarnings("unchecked")
                 Program program = (Program) root.value;
                 program.accept(new ASTVisitor());
+                System.exit(0);
             } catch (Exception e) {
-                System.err.println("Unexpected internal compiler error: " +
-                        e.toString());
+                System.err.println("Unexpected internal compiler error: ");
                 e.printStackTrace();
+                System.exit(1);
             }
         }else if(Objects.equals(args[0], "-T")){
             try {
@@ -139,8 +139,7 @@ public class MiniJava {
                 System.exit(0);
 
             } catch (Exception e) {
-                System.err.println("Unexpected internal compiler error: " +
-                        e.toString());
+                System.err.println("Unexpected internal compiler error: ");
                 e.printStackTrace();
                 System.exit(1);
             }
