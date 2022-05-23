@@ -1,0 +1,11 @@
+CSE 401 22sp Project II - Parser
+
+The parser should cleanly exit with a nonzero status when parsing fails. (-3)
+
+Arithmetic operators should bind more tightly than Boolean operators. (-1)
+
+Comparison operators (e.g., less than) should bind more tightly than Boolean operators (but less tightly than arithmetic operators). (-1)
+
+Array subscripting (i.e. accessing an index of an array) should bind more tightly than binary operators. (-1)
+
+Total: 54/60
