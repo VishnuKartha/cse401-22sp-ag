@@ -5,19 +5,23 @@ import Semantics.SymbolTables.GlobalSymbolTable;
 public class CodeGenVisitor implements Visitor {
 
     private StringBuilder sb;
+    private StringBuilder vtable;
     private GlobalSymbolTable gT;
     private String classScope;
     private String methodScope;
     private int stackSpace;
 
+
     public CodeGenVisitor(GlobalSymbolTable gst){
         gT = gst;
         sb = new StringBuilder();
+        vtable= new StringBuilder();
+        vtable.append("\t\t.data\n");
         stackSpace = 0;
     }
 
     public String getCodeGen(){
-        return sb.toString();
+        return sb.toString() + vtable.toString();
     }
 
     @Override
@@ -39,15 +43,30 @@ public class CodeGenVisitor implements Visitor {
         n.s.accept(this);
         epilogue();
         sb.append("\n");
+        vtable.append(n.i1.s).append("$$:\t.quad 0\n");
+        vtable.append("\n");
     }
 
     @Override
     public void visit(ClassDeclSimple n) {
+        classScope = n.i.s;
+        for(int i =0; i < n.ml.size(); i++){
+            n.ml.get(i).accept(this);
+        }
 
+        vtable.append(n.i.s).append("$$:\t.quad 0\n");
+        for(String m : gT.classTables.get(classScope).methods.keySet()){
+            vtable.append("\t\t.quad ").append(n.i.s).append("$").append(m).append("\n");
+        }
+
+        classScope = null;
     }
 
     @Override
     public void visit(ClassDeclExtends n) {
+        for(int i =0; i < n.ml.size(); i++){
+            n.ml.get(i).accept(this);
+        }
 
     }
 
@@ -58,7 +77,17 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(MethodDecl n) {
+        methodScope = n.i.s;
 
+        sb.append(classScope).append("$").append(methodScope).append(":\n");
+        prologue();
+        for(int i =0; i < n.sl.size(); i++){
+            n.sl.get(i).accept(this);
+        }
+        n.e.accept(this);
+        epilogue();
+
+        methodScope = null;
     }
 
     @Override
@@ -88,7 +117,9 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(Block n) {
-
+        for(int i =0; i < n.sl.size(); i++){
+            n.sl.get(i).accept(this);
+        }
     }
 
     @Override
@@ -132,17 +163,32 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(Plus n) {
-
+        n.e1.accept(this);
+        sb.append("\tpushq\t%rax\n");
+        n.e2.accept(this);
+        sb.append("\tpopq\t%rdx\n");
+        sb.append("\taddq\t%rdx,%rax\n");
+        sb.append("\n");
     }
 
     @Override
     public void visit(Minus n) {
-
+        n.e2.accept(this);
+        sb.append("\tpushq\t%rax\n");
+        n.e1.accept(this);
+        sb.append("\tpopq\t%rdx\n");
+        sb.append("\tsubq\t%rdx,%rax\n");
+        sb.append("\n");
     }
 
     @Override
     public void visit(Times n) {
-
+        n.e1.accept(this);
+        sb.append("\tpushq\t%rax\n");
+        n.e2.accept(this);
+        sb.append("\tpopq\t%rdx\n");
+        sb.append("\timulq\t%rdx,%rax\n");
+        sb.append("\n");
     }
 
     @Override
@@ -207,14 +253,12 @@ public class CodeGenVisitor implements Visitor {
 
     private void prologue(){
         sb.append("\tpushq\t%rbp\n");
-        stackSpace+=8;
         sb.append("\tmovq\t%rsp,%rbp\n");
     }
 
     private void epilogue(){
         sb.append("\tmovq\t%rbp,%rsp\n");
         sb.append("\tpopq\t%rbp\n");
-        stackSpace-=8;
         sb.append("\tret\n");
 
     }
