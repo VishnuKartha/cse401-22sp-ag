@@ -47,11 +47,18 @@ public class MiniJava {
                 }
                 CodeGenVisitor cgv = new CodeGenVisitor(gst);
                 program.accept(cgv);
+                File f = new File("./src/runtime/codegen.s");
+                if(!f.exists()){
+                    f.createNewFile();
+                }
+                BufferedWriter bw = new BufferedWriter(new FileWriter(f));
+                bw.write(cgv.getCodeGen());
+                bw.close();
                 System.out.print(cgv.getCodeGen());
                 System.exit(0);
 
             } catch (Exception e) {
-                System.err.println("Unexpected internal compiler error: ");
+                System.err.println("Unexpected error: ");
                 e.printStackTrace();
                 System.exit(1);
             }
@@ -135,7 +142,7 @@ public class MiniJava {
                 if(error){
                     System.exit(1);
                 }
-                System.out.print(gst.toString());
+                System.out.println(gst.toString());
                 System.exit(0);
 
             } catch (Exception e) {

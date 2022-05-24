@@ -24,6 +24,8 @@ public class CodeGenVisitor implements Visitor {
     public void visit(Program n) {
         sb.append("\t").append(".text").append("\n");
         sb.append("\t").append(".globl _asm_main").append("\n");
+        sb.append("\n");
+        n.m.accept(this);
         for(int i = 0; i < n.cl.size(); i++){
             n.cl.get(i).accept(this);
         }
@@ -31,7 +33,12 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(MainClass n) {
-        sb.append("_asm_main").append("\n");
+        sb.append("_asm_main:\n");
+        prologue();
+        sb.append("\n");
+        n.s.accept(this);
+        epilogue();
+        sb.append("\n");
     }
 
     @Override
@@ -96,6 +103,10 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(Print n) {
+        n.e.accept(this);
+        sb.append("\tmovq\t").append("%rax,%rdi\n");
+        sb.append("\tcall\t_put\n");
+        sb.append("\n");
 
     }
 
@@ -151,7 +162,7 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(IntegerLiteral n) {
-
+        sb.append("\tmovq\t$").append(n.i).append(",%rax\n");
     }
 
     @Override
@@ -191,6 +202,20 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(Identifier n) {
+
+    }
+
+    private void prologue(){
+        sb.append("\tpushq\t%rbp\n");
+        stackSpace+=8;
+        sb.append("\tmovq\t%rsp,%rbp\n");
+    }
+
+    private void epilogue(){
+        sb.append("\tmovq\t%rbp,%rsp\n");
+        sb.append("\tpopq\t%rbp\n");
+        stackSpace-=8;
+        sb.append("\tret\n");
 
     }
 }
