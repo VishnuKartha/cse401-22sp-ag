@@ -14,8 +14,10 @@ public class ClassTableBuilder implements Visitor {
     private GlobalSymbolTable gT;
     private String classScope;
     private boolean typeError;
+    private int offset;
     public ClassTableBuilder(GlobalSymbolTable gst) {
         gT = gst;
+        offset = 0;
     }
 
     public GlobalSymbolTable getGlobalTable(){
@@ -45,9 +47,12 @@ public class ClassTableBuilder implements Visitor {
 
         classScope = n.i.s;
         for (int i = 0; i < n.vl.size(); i++) {
+            offset = i;
             n.vl.get(i).accept(this);
         }
+        offset = 0;
         for (int i = 0; i < n.ml.size(); i++) {
+            offset = i;
             n.ml.get(i).accept(this);
         }
         classScope = null;
@@ -87,12 +92,16 @@ public class ClassTableBuilder implements Visitor {
                 return;
             }
             ct.fields.put(n.i.s, gT.classTypes.get(((IdentifierType) n.t).s));
+            ct.fields.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntegerType){
             ct.fields.put(n.i.s, PrimitiveType.INT);
+            ct.fields.get(n.i.s).offset = offset;
         }else if(n.t instanceof BooleanType){
             ct.fields.put(n.i.s, PrimitiveType.BOOLEAN);
+            ct.fields.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntArrayType){
             ct.fields.put(n.i.s, new ArrayType(PrimitiveType.INT));
+            ct.fields.get(n.i.s).offset = offset;
         }
     }
 
@@ -112,12 +121,16 @@ public class ClassTableBuilder implements Visitor {
                 return;
             }
             ct.methods.put(n.i.s, new MethodType(gT.classTypes.get(((IdentifierType) n.t).s), new ArrayList<>()));
+            ct.methods.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntegerType){
             ct.methods.put(n.i.s, new MethodType(PrimitiveType.INT, new ArrayList<>()));
+            ct.methods.get(n.i.s).offset = offset;
         }else if(n.t instanceof BooleanType){
             ct.methods.put(n.i.s, new MethodType(PrimitiveType.BOOLEAN, new ArrayList<>()));
+            ct.methods.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntArrayType){
             ct.methods.put(n.i.s, new MethodType(new ArrayType(PrimitiveType.INT), new ArrayList<>()));
+            ct.methods.get(n.i.s).offset = offset;
         }
         ct.methodTables.put(n.i.s, new MethodSymbolTable(ct));
 

@@ -14,6 +14,7 @@ public class MethodType extends MiniJavaType{
     public MethodType(MiniJavaType rt, List<MiniJavaType> p){
         returnType = rt;
         params = p;
+        offset = 0;
     }
     @Override
     public boolean typeEquals(MiniJavaType o) {

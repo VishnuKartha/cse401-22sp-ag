@@ -8,6 +8,7 @@ public class Undef extends MiniJavaType{
     private String id;
     private Undef(String i){
         id = i;
+        offset = 0;
     }
     @Override
     public boolean typeEquals(MiniJavaType o) {

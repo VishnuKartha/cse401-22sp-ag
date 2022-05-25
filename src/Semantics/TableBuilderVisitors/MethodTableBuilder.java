@@ -12,9 +12,11 @@ public class MethodTableBuilder implements Visitor {
     private String classScope;
     private String methodScope;
     private boolean typeError;
+    private int offset;
 
     public MethodTableBuilder(GlobalSymbolTable gst){
         gT = gst;
+        offset = 0;
     }
 
     public GlobalSymbolTable getGlobalTable(){
@@ -71,12 +73,16 @@ public class MethodTableBuilder implements Visitor {
                 return;
             }
             mt.vars.put(n.i.s, gT.classTypes.get(((IdentifierType) n.t).s));
+            mt.vars.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntegerType){
             mt.vars.put(n.i.s, PrimitiveType.INT);
+            mt.vars.get(n.i.s).offset = offset;
         }else if(n.t instanceof BooleanType){
             mt.vars.put(n.i.s, PrimitiveType.BOOLEAN);
+            mt.vars.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntArrayType){
             mt.vars.put(n.i.s, new ArrayType(PrimitiveType.INT));
+            mt.vars.get(n.i.s).offset = offset;
         }
     }
 
@@ -84,11 +90,15 @@ public class MethodTableBuilder implements Visitor {
     public void visit(MethodDecl n) {
         methodScope = n.i.s;
         for(int i =0; i < n.fl.size(); i++){
+            offset = i;
             n.fl.get(i).accept(this);
         }
+        offset = 0;
         for(int i =0; i < n.vl.size(); i++){
+            offset = i;
             n.vl.get(i).accept(this);
         }
+        offset = 0;
         methodScope = null;
     }
 
@@ -110,15 +120,19 @@ public class MethodTableBuilder implements Visitor {
             }
             mt.params.put(n.i.s, gT.classTypes.get(((IdentifierType) n.t).s));
             mType.params.add(gT.classTypes.get(((IdentifierType) n.t).s));
+            mt.params.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntegerType){
             mt.params.put(n.i.s, PrimitiveType.INT);
             mType.params.add(PrimitiveType.INT);
+            mt.params.get(n.i.s).offset = offset;
         }else if(n.t instanceof BooleanType){
             mt.params.put(n.i.s, PrimitiveType.BOOLEAN);
             mType.params.add(PrimitiveType.BOOLEAN);
+            mt.params.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntArrayType){
             mt.params.put(n.i.s, new ArrayType(PrimitiveType.INT));
             mType.params.add(new ArrayType(PrimitiveType.INT));
+            mt.params.get(n.i.s).offset = offset;
         }
     }
 

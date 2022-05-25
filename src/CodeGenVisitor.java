@@ -1,6 +1,8 @@
 import AST.*;
 import AST.Visitor.Visitor;
 import Semantics.SymbolTables.GlobalSymbolTable;
+import Types.ClassType;
+import Types.MiniJavaType;
 
 public class CodeGenVisitor implements Visitor {
 
@@ -81,6 +83,7 @@ public class CodeGenVisitor implements Visitor {
 
         sb.append(classScope).append("$").append(methodScope).append(":\n");
         prologue();
+        sb.append("\tsubq\t").append(8*n.vl.size()).append(",%rsp\n\n");
         for(int i =0; i < n.sl.size(); i++){
             n.sl.get(i).accept(this);
         }
@@ -143,6 +146,15 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(Assign n) {
+        MiniJavaType id;
+        if(gT.classTables.get(classScope).methodTables.get(methodScope).vars.containsKey(n.i.s)){
+            id = gT.classTables.get(classScope).methodTables.get(methodScope).vars.get(n.i.s);
+        }else if(gT.classTables.get(classScope).methodTables.get(methodScope).params.containsKey(n.i.s)){
+            id = gT.classTables.get(classScope).methodTables.get(methodScope).params.get(n.i.s);
+        }else{
+            id = gT.classTables.get(classScope).fields.get(n.i.s);
+        }
+        int offset = id.offset;
 
     }
 
@@ -203,7 +215,13 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(Call n) {
-
+        n.e.accept(this);
+        sb.append("\tmovq\t%rax,%rdi\n");
+        sb.append("\tmovq\t0(%rdi),%rax\n");
+        ClassType ct = (ClassType) n.e.type;
+        int offset = gT.classTables.get(ct.type).methods.get(n.i.s).offset;
+        sb.append("\tcall\t*").append(8 + 8*offset).append("(%rax)\n");
+        sb.append("\n");
     }
 
     @Override
@@ -238,7 +256,11 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(NewObject n) {
-
+        int num_vars = gT.classTables.get(n.i.s).fields.size();
+        sb.append("\tmovq\t$").append(8 + 8*num_vars).append(",%rdi\n");
+        sb.append("\tcall\t_mjcalloc\n");
+        sb.append("\tleaq\t").append(n.i.s).append("$$(%rip),%rdx\n");
+        sb.append("\tmovq\t%rdx,0(%rax)\n");
     }
 
     @Override
@@ -260,6 +282,5 @@ public class CodeGenVisitor implements Visitor {
         sb.append("\tmovq\t%rbp,%rsp\n");
         sb.append("\tpopq\t%rbp\n");
         sb.append("\tret\n");
-
     }
 }

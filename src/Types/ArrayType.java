@@ -8,6 +8,7 @@ public class ArrayType extends MiniJavaType{
 
     public ArrayType(MiniJavaType elementType){
         element = elementType;
+        offset = 0;
     }
 
     @Override

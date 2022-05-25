@@ -4,6 +4,7 @@ import Semantics.SymbolTables.GlobalSymbolTable;
 
 public abstract class MiniJavaType {
 
+    public int offset;
     // Return true if type o is the same
     public abstract boolean typeEquals(MiniJavaType o);
 

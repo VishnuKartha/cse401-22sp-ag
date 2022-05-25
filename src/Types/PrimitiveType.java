@@ -10,6 +10,7 @@ public class PrimitiveType extends MiniJavaType {
 
     private PrimitiveType(String t){
         type = t;
+        offset = 0;
     }
 
     @Override

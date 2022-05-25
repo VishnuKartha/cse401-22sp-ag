@@ -12,6 +12,7 @@ public class ClassType extends MiniJavaType{
     public ClassType(String t, String st){
         type = t;
         superType = st;
+        offset = 0;
     }
     @Override
     public boolean typeEquals(MiniJavaType o) {

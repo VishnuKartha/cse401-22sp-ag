@@ -5,6 +5,14 @@ _asm_main:
 	pushq	%rbp
 	movq	%rsp,%rbp
 
+	movq	$8,%rdi
+	call	_mjcalloc
+	leaq	Fac$$(%rip),%rdx
+	movq	%rdx,0(%rax)
+	movq	%rax,%rdi
+	movq	0(%rdi),%rax
+	call	*8(%rax)
+
 	movq	%rax,%rdi
 	call	_put
 
@@ -12,14 +20,10 @@ _asm_main:
 	popq	%rbp
 	ret
 
-Fac$ComputeFac:
+Fac$sumOf:
 	pushq	%rbp
 	movq	%rsp,%rbp
-	movq	$3,%rax
-	pushq	%rax
-	movq	$4,%rax
-	popq	%rdx
-	addq	%rdx,%rax
+	subq	16,%rsp
 
 	movq	%rbp,%rsp
 	popq	%rbp
@@ -28,4 +32,4 @@ Fac$ComputeFac:
 Factorial$$:	.quad 0
 
 Fac$$:	.quad 0
-		.quad Fac$ComputeFac
+		.quad Fac$sumOf
