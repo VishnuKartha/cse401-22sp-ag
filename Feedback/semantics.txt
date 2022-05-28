@@ -4,16 +4,6 @@ False negative: an overridden method in a subclass must have the same argument t
 
 False negative: an overridden method in a subclass must have either the same return type or a subclass of the return type in the original superclass method. (-2)
 
-False negative: arrays can only be indexed with an integer. (-2)
-
-False negative: A class cannot extend an undeclared superclass. (-2)
-
-False negative: “!” can only be applied to booleans. (-2)
-
-False negative: “System.out.println” can only take integer arguments. (-2)
-
-False negative: return type in function header must match actual returned type. (-2)
-
 The semantics checker crashed with a NullPointerException when trying to check a file where the method returned an undeclared type (-2)
 
 Misleading error messages. (-1)
@@ -22,24 +12,10 @@ The project prints errors to stdout instead of stderr. (-1)
 
 The compiler doesn’t always exit with status code 1 on errors/exceptions. (-2)
 
-False negative: Checker doesn’t catch inheritance cycles. (-2)
-
-False negative: Array elements (e.g., arr[0]) should only be assignable int types. (-2)
-
-False negative: length function call should only be callable on int array types. (-2)
-
-False negative: Expressions on both sides of ‘<’ should be of type int (not object types). (-2)
-
-False negative: Arithmetic operators (e.g., minus and plus) should only work on integers. (-2)
-
-False positive: Something like ‘arr[0] + arr[1] + arr.length’ should be valid, but the type checker rejects it. (-2)
-
-False negative: && operators should only work on booleans. (-2)
-
-False negative: The condition of an if and, or while statement must be a boolean. (-2)
+False positive: Something like ‘arr[0] + arr[1] + arr.length’ should be valid, but the type checker rejects it. Double check to see if your parser is parsing this statement correctly. (-0)
 
 Symbol table doesn’t indicate inheritance relationships. (-0)
 
 Tagged a final submission that doesn’t build; graded the next working version instead. (-2)
 
-Total: 42/80
+Total: 68/80
