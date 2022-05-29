@@ -4,6 +4,9 @@ import Semantics.SymbolTables.GlobalSymbolTable;
 import Types.ClassType;
 import Types.MiniJavaType;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class CodeGenVisitor implements Visitor {
 
     private StringBuilder sb;
@@ -11,6 +14,8 @@ public class CodeGenVisitor implements Visitor {
     private GlobalSymbolTable gT;
     private String classScope;
     private String methodScope;
+
+    private Map<String,Integer> labelsUsed;
     private int stackSpace;
 
 
@@ -19,6 +24,7 @@ public class CodeGenVisitor implements Visitor {
         sb = new StringBuilder();
         vtable= new StringBuilder();
         vtable.append("\t\t.data\n");
+        this.labelsUsed = new HashMap<>();
         stackSpace = 0;
     }
 
@@ -73,9 +79,7 @@ public class CodeGenVisitor implements Visitor {
     }
 
     @Override
-    public void visit(VarDecl n) {
-
-    }
+    public void visit(VarDecl n) {}
 
     @Override
     public void visit(MethodDecl n) {
@@ -127,11 +131,49 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(If n) {
+        String else_ = generateLabel("else");
+        String end_if = generateLabel("end_if");
 
+        n.e.sense = false;
+        n.e.target = else_;
+        n.e.accept(this);
+
+        n.e.accept(this);
+        if(n.e instanceof True ||n.e instanceof False || n.e instanceof IdentifierExp || n.e instanceof Call || n.e instanceof Not) {
+            gen("cmpq", 0, "%rax");
+            gen("je", else_);
+        }
+
+        n.s1.accept(this);
+        gen("jmp", end_if);
+        gen(else_ + ":");
+        n.s2.accept(this);
+        gen(end_if + ":");
     }
 
     @Override
     public void visit(While n) {
+        String end_while = generateLabel("end_while");
+        String test = generateLabel("test_while");
+        String body = generateLabel("body_while");
+
+
+        sb.append(test + ":");
+
+
+        n.e.sense = false;
+        n.e.target = end_while;
+
+        n.e.accept(this);
+        if(n.e instanceof True ||n.e instanceof False || n.e instanceof IdentifierExp || n.e instanceof Call || n.e instanceof Not) {
+            gen("cmpq", 0, "%rax");
+            gen("je", end_while);
+        }
+        gen(body + ":");
+
+        n.s.accept(this);
+        gen("jmp", test);
+        gen(end_while + ":");
 
     }
 
@@ -160,6 +202,25 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(ArrayAssign n) {
+        // the offset of the variable
+        MiniJavaType id;
+        if(gT.classTables.get(classScope).methodTables.get(methodScope).vars.containsKey(n.i.s)){
+            id = gT.classTables.get(classScope).methodTables.get(methodScope).vars.get(n.i.s);
+        }else if(gT.classTables.get(classScope).methodTables.get(methodScope).params.containsKey(n.i.s)){
+            id = gT.classTables.get(classScope).methodTables.get(methodScope).params.get(n.i.s);
+        }else{
+            id = gT.classTables.get(classScope).fields.get(n.i.s);
+        }
+        int offset = id.offset;
+
+        String negativeSign = (offset <= 0) ? "" : "-";
+        offset = Math.abs(offset);
+
+        n.e1.accept(this);
+        sb.append("\tpushq\t%rax\n");
+        n.e2.accept(this);
+        sb.append("\tpopq\t%rdx\n");
+
 
     }
 
@@ -170,7 +231,16 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(LessThan n) {
-
+        n.e1.accept(this);
+        sb.append("\tpushq\t%rax\n");
+        n.e2.accept(this);
+        sb.append("\tpopq\t%rdx\n");
+        sb.append("\tcmpq\t%rdx,%rax\n");
+        if(n.sense) {
+            gen("jl", n.target);
+        } else {
+            gen("jge", n.target);
+        }
     }
 
     @Override
@@ -231,11 +301,13 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(True n) {
+        sb.append("\tmovq\t$1,%rax\n");
 
     }
 
     @Override
     public void visit(False n) {
+        sb.append("\tmovq\t$1,%rax\n");
 
     }
 
@@ -265,7 +337,14 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(Not n) {
+        n.e.sense = !n.sense;
+        if (n.e instanceof True ||
+                n.e instanceof False ||
+                n.e instanceof IdentifierExp ||
+                n.e instanceof Call) {
+            gen("xor", 1, "%rax");
 
+        }
     }
 
     @Override
@@ -282,5 +361,26 @@ public class CodeGenVisitor implements Visitor {
         sb.append("\tmovq\t%rbp,%rsp\n");
         sb.append("\tpopq\t%rbp\n");
         sb.append("\tret\n");
+    }
+
+    private String generateLabel(String name) {
+        int numUsed = this.labelsUsed.getOrDefault(name,0);
+        this.labelsUsed.put(name,numUsed+1);
+        return name + numUsed+1;
+    }
+    private void gen(String s) {
+        sb.append(s);
+    }
+
+    private void gen(String instruction, String src, String dst) {
+        gen("\t" + instruction + "\t" + src + "," + dst);
+    }
+
+    private void gen(String instruction, int num, String dst) {
+        gen("\t" + instruction + "\t" + "$" + num + "," + dst);
+    }
+
+    private void gen(String instruction, String dst) {
+        gen("\t" + instruction + "\t" + dst);
     }
 }

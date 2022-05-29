@@ -1,4 +1,4 @@
-This is the start of a simple compiler which you should modify to
+  java MiniJava filename.javaThis is the start of a simple compiler which you should modify to
 compile the MiniJava language.  The starter code is meant primarily to
 show how the toolchain works and how the various parts of the compiler
 project plug together.
