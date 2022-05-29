@@ -2,25 +2,35 @@ package Types;
 
 import Semantics.SymbolTables.GlobalSymbolTable;
 
+import java.util.Objects;
+
 public class PrimitiveType extends MiniJavaType {
 
-    public static final PrimitiveType INT = new PrimitiveType("int");
-    public static final PrimitiveType BOOLEAN = new PrimitiveType("boolean");
+    public static final String INT = "int";
+    public static final String BOOLEAN = "boolean";
     private String type;
 
-    private PrimitiveType(String t){
+    public PrimitiveType(String t){
         type = t;
         offset = 0;
     }
 
     @Override
     public boolean typeEquals(MiniJavaType o) {
-        return o == this;
+        if(!(o instanceof PrimitiveType)){
+            return false;
+        }
+        PrimitiveType other = (PrimitiveType) o;
+        return type.equals(other.type);
     }
 
     @Override
     public boolean assignable(MiniJavaType o, GlobalSymbolTable gst) {
-        return o == this;
+        if(!(o instanceof PrimitiveType)){
+            return false;
+        }
+        PrimitiveType other = (PrimitiveType) o;
+        return type.equals(other.type);
     }
 
     public String toString(){

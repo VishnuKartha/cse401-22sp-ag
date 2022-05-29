@@ -196,8 +196,7 @@ public class CodeGenVisitor implements Visitor {
         // See if it is Local Var
         if(gT.classTables.get(classScope).methodTables.get(methodScope).vars.containsKey(n.i.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).vars.get(n.i.s);
-            gen("movq", "%rax", "-" + 8*id.offset + "(%rbp)");
-            System.out.println(n.i.s+id.offset);
+            gen("movq", "%rax", "-" + (8 + 8*id.offset) + "(%rbp)");
         }else if(gT.classTables.get(classScope).methodTables.get(methodScope).params.containsKey(n.i.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).params.get(n.i.s);
             gen("movq", "%rax", (16 + 8 * id.offset) + "(%rbp)");
@@ -335,7 +334,7 @@ public class CodeGenVisitor implements Visitor {
         MiniJavaType id;
         if(gT.classTables.get(classScope).methodTables.get(methodScope).vars.containsKey(n.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).vars.get(n.s);
-            gen("movq",  "-" + 8*id.offset + "(%rbp)", "%rax");
+            gen("movq",  "-" + (8 + 8*id.offset) + "(%rbp)", "%rax");
         }else if(gT.classTables.get(classScope).methodTables.get(methodScope).params.containsKey(n.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).params.get(n.s);
             gen("movq", (16 + 8 * id.offset) + "(%rbp)", "%rax");

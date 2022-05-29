@@ -46,7 +46,6 @@ public class MiniJava {
                 program.accept(tp);
                 error = error || tp.errorStatus();
                 if(error){
-                    System.err.println("Semantic Errors:");
                     System.exit(1);
                 }
                 CodeGenVisitor cgv = new CodeGenVisitor(gst);

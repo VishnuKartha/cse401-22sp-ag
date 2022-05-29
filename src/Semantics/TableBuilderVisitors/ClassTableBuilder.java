@@ -95,13 +95,13 @@ public class ClassTableBuilder implements Visitor {
             ct.fields.put(n.i.s, gT.classTypes.get(((IdentifierType) n.t).s));
             ct.fields.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntegerType){
-            ct.fields.put(n.i.s, PrimitiveType.INT);
+            ct.fields.put(n.i.s, new PrimitiveType(PrimitiveType.INT));
             ct.fields.get(n.i.s).offset = offset;
         }else if(n.t instanceof BooleanType){
-            ct.fields.put(n.i.s, PrimitiveType.BOOLEAN);
+            ct.fields.put(n.i.s, new PrimitiveType(PrimitiveType.BOOLEAN));
             ct.fields.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntArrayType){
-            ct.fields.put(n.i.s, new ArrayType(PrimitiveType.INT));
+            ct.fields.put(n.i.s, new ArrayType(new PrimitiveType(PrimitiveType.INT)));
             ct.fields.get(n.i.s).offset = offset;
         }
     }
@@ -119,17 +119,19 @@ public class ClassTableBuilder implements Visitor {
             if(!gT.classTypes.containsKey(((IdentifierType) n.t).s)){
                 System.err.println("Semantic Error: Return type does not exist on line " + n.line_number);
                 typeError = true;
+                ct.methods.put(n.i.s, new MethodType(Undef.UNDEFINED, new ArrayList<>()));
+            }else{
+                ct.methods.put(n.i.s, new MethodType(gT.classTypes.get(((IdentifierType) n.t).s), new ArrayList<>()));
             }
-            ct.methods.put(n.i.s, new MethodType(Undef.UNDEFINED, new ArrayList<>()));
             ct.methods.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntegerType){
-            ct.methods.put(n.i.s, new MethodType(PrimitiveType.INT, new ArrayList<>()));
+            ct.methods.put(n.i.s, new MethodType(new PrimitiveType(PrimitiveType.INT), new ArrayList<>()));
             ct.methods.get(n.i.s).offset = offset;
         }else if(n.t instanceof BooleanType){
-            ct.methods.put(n.i.s, new MethodType(PrimitiveType.BOOLEAN, new ArrayList<>()));
+            ct.methods.put(n.i.s, new MethodType(new PrimitiveType(PrimitiveType.BOOLEAN), new ArrayList<>()));
             ct.methods.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntArrayType){
-            ct.methods.put(n.i.s, new MethodType(new ArrayType(PrimitiveType.INT), new ArrayList<>()));
+            ct.methods.put(n.i.s, new MethodType(new ArrayType(new PrimitiveType(PrimitiveType.INT)), new ArrayList<>()));
             ct.methods.get(n.i.s).offset = offset;
         }
         ct.methodTables.put(n.i.s, new MethodSymbolTable(ct));

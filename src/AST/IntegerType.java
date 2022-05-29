@@ -7,7 +7,7 @@ import java_cup.runtime.ComplexSymbolFactory.Location;
 public class IntegerType extends Type {
   public IntegerType(Location pos) {
     super(pos);
-    super.type = PrimitiveType.INT;
+    super.type = new PrimitiveType(PrimitiveType.INT);
   }
   public void accept(Visitor v) {
     v.visit(this);

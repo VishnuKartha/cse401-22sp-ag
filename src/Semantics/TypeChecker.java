@@ -168,7 +168,7 @@ public class TypeChecker implements Visitor {
     @Override
     public void visit(If n) {
         n.e.accept(this);
-        if(!n.e.type.typeEquals(PrimitiveType.BOOLEAN)){
+        if(!n.e.type.typeEquals(new PrimitiveType(PrimitiveType.BOOLEAN))){
             System.err.println("Semantic Error: Expression must be type boolean on line " + n.line_number);
             typeError = true;
         }
@@ -179,7 +179,7 @@ public class TypeChecker implements Visitor {
     @Override
     public void visit(While n) {
         n.e.accept(this);
-        if(!n.e.type.typeEquals(PrimitiveType.BOOLEAN)){
+        if(!n.e.type.typeEquals(new PrimitiveType(PrimitiveType.BOOLEAN))){
             System.err.println("Semantic Error: Expression must be type boolean on line " + n.line_number);
             typeError = true;
         }
@@ -189,7 +189,7 @@ public class TypeChecker implements Visitor {
     @Override
     public void visit(Print n) {
         n.e.accept(this);
-        if(!n.e.type.typeEquals(PrimitiveType.INT)){
+        if(!n.e.type.typeEquals(new PrimitiveType(PrimitiveType.INT))){
             System.err.println("Semantic Error: Can only print integer values on line " + n.line_number);
             typeError = true;
         }
@@ -230,13 +230,13 @@ public class TypeChecker implements Visitor {
             return;
         }
         n.e1.accept(this);
-        if(!n.e1.type.typeEquals(PrimitiveType.INT)){
+        if(!n.e1.type.typeEquals(new PrimitiveType(PrimitiveType.INT))){
             System.err.println("Semantic Error: Array index must be integer on line " + n.line_number);
             typeError = true;
             return;
         }
         n.e2.accept(this);
-        if(!n.e2.type.typeEquals(PrimitiveType.INT)){
+        if(!n.e2.type.typeEquals(new PrimitiveType(PrimitiveType.INT))){
             System.err.println("Semantic Error: Array element must be type integer on line " + n.line_number);
             typeError = true;
         }
@@ -246,65 +246,65 @@ public class TypeChecker implements Visitor {
     public void visit(And n) {
         n.e1.accept(this);
         n.e2.accept(this);
-        if(!(n.e1.type.typeEquals(PrimitiveType.BOOLEAN) && n.e2.type.typeEquals(PrimitiveType.BOOLEAN))){
+        if(!(n.e1.type.typeEquals(new PrimitiveType(PrimitiveType.BOOLEAN)) && n.e2.type.typeEquals(new PrimitiveType(PrimitiveType.BOOLEAN)))){
             System.err.println("Semantic Error: Both expressions must be booleans on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
         }
-        n.type = PrimitiveType.BOOLEAN;
+        n.type = new PrimitiveType(PrimitiveType.BOOLEAN);
     }
 
     @Override
     public void visit(LessThan n) {
         n.e1.accept(this);
         n.e2.accept(this);
-        if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
+        if(!(n.e1.type.typeEquals(new PrimitiveType(PrimitiveType.INT)) && n.e2.type.typeEquals(new PrimitiveType(PrimitiveType.INT)))){
             System.err.println("Semantic Error: Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
         }
-        n.type = PrimitiveType.BOOLEAN;
+        n.type = new PrimitiveType(PrimitiveType.INT);
     }
 
     @Override
     public void visit(Plus n) {
         n.e1.accept(this);
         n.e2.accept(this);
-        if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
+        if(!(n.e1.type.typeEquals(new PrimitiveType(PrimitiveType.INT)) && n.e2.type.typeEquals(new PrimitiveType(PrimitiveType.INT)))){
             System.err.println("Semantic Error: Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
         }
-        n.type = PrimitiveType.INT;
+        n.type = new PrimitiveType(PrimitiveType.INT);
     }
 
     @Override
     public void visit(Minus n) {
         n.e1.accept(this);
         n.e2.accept(this);
-        if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
+        if(!(n.e1.type.typeEquals(new PrimitiveType(PrimitiveType.INT)) && n.e2.type.typeEquals(new PrimitiveType(PrimitiveType.INT)))){
             System.err.println("Semantic Error: Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = false;
             return;
         }
-        n.type = PrimitiveType.INT;
+        n.type = new PrimitiveType(PrimitiveType.INT);
     }
 
     @Override
     public void visit(Times n) {
         n.e1.accept(this);
         n.e2.accept(this);
-        if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
+        if(!(n.e1.type.typeEquals(new PrimitiveType(PrimitiveType.INT)) && n.e2.type.typeEquals(new PrimitiveType(PrimitiveType.INT)))){
             System.err.println("Semantic Error: Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
         }
-        n.type = PrimitiveType.INT;
+        n.type = new PrimitiveType(PrimitiveType.INT);
     }
 
     @Override
@@ -316,12 +316,12 @@ public class TypeChecker implements Visitor {
             typeError = true;
         }
         n.e2.accept(this);
-        if(!n.e2.type.typeEquals(PrimitiveType.INT)){
+        if(!n.e2.type.typeEquals(new PrimitiveType(PrimitiveType.INT))){
             System.err.println("Semantic Error: Array index must be an integer on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
         }else{
-            n.type = PrimitiveType.INT;
+            n.type = new PrimitiveType(PrimitiveType.INT);
         }
 
 
@@ -338,7 +338,7 @@ public class TypeChecker implements Visitor {
             System.err.println("Semantic Error: Expression is not an array at line " + n.line_number);
             n.type = Undef.UNDEFINED;
         }else{
-            n.type = PrimitiveType.INT;
+            n.type = new PrimitiveType(PrimitiveType.INT);
         }
 
     }
@@ -384,17 +384,17 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(IntegerLiteral n) {
-        n.type = PrimitiveType.INT;
+        n.type = new PrimitiveType(PrimitiveType.INT);
     }
 
     @Override
     public void visit(True n) {
-        n.type = PrimitiveType.BOOLEAN;
+        n.type = new PrimitiveType(PrimitiveType.BOOLEAN);
     }
 
     @Override
     public void visit(False n) {
-        n.type = PrimitiveType.BOOLEAN;
+        n.type = new PrimitiveType(PrimitiveType.BOOLEAN);
     }
 
     @Override
@@ -419,13 +419,13 @@ public class TypeChecker implements Visitor {
     @Override
     public void visit(NewArray n) {
         n.e.accept(this);
-        if(!n.e.type.typeEquals(PrimitiveType.INT)){
+        if(!n.e.type.typeEquals(new PrimitiveType(PrimitiveType.INT))){
             System.err.println("Semantic Error: Expression must be integer type on line " + n.line_number);
             typeError = true;
             return;
         }
         // only int arrays
-        n.type = new ArrayType(PrimitiveType.INT);
+        n.type = new ArrayType(new PrimitiveType(PrimitiveType.INT));
     }
 
     @Override
@@ -442,7 +442,7 @@ public class TypeChecker implements Visitor {
     @Override
     public void visit(Not n) {
         n.e.accept(this);
-        if(!(n.e.type.typeEquals(PrimitiveType.BOOLEAN))){
+        if(!(n.e.type.typeEquals(new PrimitiveType(PrimitiveType.BOOLEAN)))){
             System.err.println("Semantic Error: Expression must have type boolean on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
