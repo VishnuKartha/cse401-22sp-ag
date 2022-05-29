@@ -88,7 +88,9 @@ public class CodeGenVisitor implements Visitor {
 
         sb.append(classScope).append("$").append(methodScope).append(":\n");
         prologue();
-        sb.append("\tsubq\t").append(8*n.vl.size()).append(",%rsp\n\n");
+        // Local Variables
+        gen("subq",8*n.vl.size(),"%rsp");
+        stackVariables += n.vl.size();
         for(int i =0; i < n.sl.size(); i++){
             n.sl.get(i).accept(this);
         }
@@ -181,9 +183,8 @@ public class CodeGenVisitor implements Visitor {
     @Override
     public void visit(Print n) {
         n.e.accept(this);
-        sb.append("\tmovq\t").append("%rax,%rdi\n");
-        sb.append("\tcall\t_put\n");
-        sb.append("\n");
+        gen("movq","%rax","%rdi");
+        gen("call","_put");
 
     }
 
@@ -226,10 +227,9 @@ public class CodeGenVisitor implements Visitor {
 
 
         n.e1.accept(this);
-        sb.append("\tpushq\t%rax\n");
+        gen("pushq","%rax");
         n.e2.accept(this);
-        sb.append("\tpopq\t%rdx\n");
-
+        gen("popq","%rdx");
 
     }
 
@@ -241,10 +241,10 @@ public class CodeGenVisitor implements Visitor {
     @Override
     public void visit(LessThan n) {
         n.e1.accept(this);
-        sb.append("\tpushq\t%rax\n");
+        gen("pushq","%rax");
         n.e2.accept(this);
-        sb.append("\tpopq\t%rdx\n");
-        sb.append("\tcmpq\t%rdx,%rax\n");
+        gen("popq","%rdx");
+        gen("cmpq","%rdx","%rax");
         if(n.sense) {
             gen("jl", n.target);
         } else {
@@ -255,30 +255,30 @@ public class CodeGenVisitor implements Visitor {
     @Override
     public void visit(Plus n) {
         n.e1.accept(this);
-        sb.append("\tpushq\t%rax\n");
+        gen("pushq","%rax");
         n.e2.accept(this);
-        sb.append("\tpopq\t%rdx\n");
-        sb.append("\taddq\t%rdx,%rax\n");
+        gen("popq","%rdx");
+        gen("addq","%rdx","%rax");
         sb.append("\n");
     }
 
     @Override
     public void visit(Minus n) {
         n.e2.accept(this);
-        sb.append("\tpushq\t%rax\n");
+        gen("pushq","%rax");
         n.e1.accept(this);
-        sb.append("\tpopq\t%rdx\n");
-        sb.append("\tsubq\t%rdx,%rax\n");
+        gen("popq","%rdx");
+        gen("subq","%rdx","%rax");
         sb.append("\n");
     }
 
     @Override
     public void visit(Times n) {
-        n.e1.accept(this);
-        sb.append("\tpushq\t%rax\n");
         n.e2.accept(this);
-        sb.append("\tpopq\t%rdx\n");
-        sb.append("\timulq\t%rdx,%rax\n");
+        gen("pushq","%rax");
+        n.e1.accept(this);
+        gen("popq","%rdx");
+        gen("imulq","%rdx","%rax");
         sb.append("\n");
     }
 
@@ -295,8 +295,7 @@ public class CodeGenVisitor implements Visitor {
     @Override
     public void visit(Call n) {
         n.e.accept(this);
-        sb.append("\tmovq\t%rax,%rdi\n");
-        sb.append("\tmovq\t0(%rdi),%rax\n");
+
         ClassType ct = (ClassType) n.e.type;
         MethodType mt = gT.classTables.get(ct.type).methods.get(n.i.s);
         stackVariables += n.el.size();
@@ -308,24 +307,25 @@ public class CodeGenVisitor implements Visitor {
             gen("pushq", "%rax");
         }
         int offset = gT.classTables.get(ct.type).methods.get(n.i.s).offset;
-        sb.append("\tcall\t*").append(8 + 8*offset).append("(%rax)\n");
+        gen("movq","0(%rdi)","%rax");
+        gen("call", "*" + (8 + 8*offset) + "(%rax)");
         sb.append("\n");
     }
 
     @Override
     public void visit(IntegerLiteral n) {
-        sb.append("\tmovq\t$").append(n.i).append(",%rax\n");
+        gen("movq",n.i,"%rax");
     }
 
     @Override
     public void visit(True n) {
-        sb.append("\tmovq\t$1,%rax\n");
+        gen("movq",1,"%rax");
 
     }
 
     @Override
     public void visit(False n) {
-        sb.append("\tmovq\t$1,%rax\n");
+        gen("movq",0,"%rax");
 
     }
 
@@ -357,10 +357,11 @@ public class CodeGenVisitor implements Visitor {
     @Override
     public void visit(NewObject n) {
         int num_vars = gT.classTables.get(n.i.s).fields.size();
-        sb.append("\tmovq\t$").append(8 + 8*num_vars).append(",%rdi\n");
-        sb.append("\tcall\t_mjcalloc\n");
-        sb.append("\tleaq\t").append(n.i.s).append("$$(%rip),%rdx\n");
-        sb.append("\tmovq\t%rdx,0(%rax)\n");
+        gen("movq",(8 + 8*num_vars),"%rdi");
+        gen("call","_mjcalloc");
+        gen("leaq",n.i.s + "$$(%rip),%rdx");
+        gen("movq","%rdx","0(%rax)");
+        gen("movq","%rax","%rdi");
     }
 
     @Override
@@ -397,7 +398,7 @@ public class CodeGenVisitor implements Visitor {
         return name + numUsed+1;
     }
     private void gen(String s) {
-        sb.append(s);
+        sb.append(s + "\n");
     }
 
     private void gen(String instruction, String src, String dst) {
@@ -408,7 +409,7 @@ public class CodeGenVisitor implements Visitor {
         gen("\t" + instruction + "\t" + "$" + num + "," + dst);
     }
 
-    private void gen(String instruction, String dst) {
-        gen("\t" + instruction + "\t" + dst);
+    private void gen(String instruction, String arg) {
+        gen("\t" + instruction + "\t" + arg);
     }
 }
