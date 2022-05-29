@@ -1,6 +1,6 @@
 class Factorial{
     public static void main(String[] a){
-	    System.out.println(new Fac().sumOf(3,4));
+	    System.out.println(new Fac().hue());
     }
 }
 
@@ -18,7 +18,7 @@ class Fac {
     }
 
     public int hue(){
-        return 0;
+        return 1;
     }
 
 }

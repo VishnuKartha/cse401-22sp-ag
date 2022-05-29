@@ -10,12 +10,8 @@ _asm_main:
 	leaq	Fac$$(%rip),%rdx
 	movq	%rdx,0(%rax)
 	movq	%rax,%rdi
-	movq	$4,%rax
-	pushq	%rax
-	movq	$3,%rax
-	pushq	%rax
 	movq	0(%rdi),%rax
-	call	*8(%rax)
+	call	*24(%rax)
 
 	movq	%rax,%rdi
 	call	_put
@@ -52,7 +48,7 @@ Fac$hue:
 	pushq	%rbp
 	movq	%rsp,%rbp
 	subq	$0,%rsp
-	movq	$0,%rax
+	movq	$1,%rax
 	movq	%rbp,%rsp
 	popq	%rbp
 	ret
@@ -61,5 +57,5 @@ Factorial$$:	.quad 0
 
 Fac$$:	.quad 0
 		.quad Fac$sumOf
-		.quad Fac$hue
 		.quad Fac$bruh
+		.quad Fac$hue

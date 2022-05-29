@@ -64,8 +64,8 @@ public class CodeGenVisitor implements Visitor {
         }
 
         vtable.append(n.i.s).append("$$:\t.quad 0\n");
-        for(String m : gT.classTables.get(classScope).methods.keySet()){
-            vtable.append("\t\t.quad ").append(n.i.s).append("$").append(m).append("\n");
+        for(int i = 0; i < n.ml.size(); i++){
+            vtable.append("\t\t.quad ").append(n.i.s).append("$").append(n.ml.get(i).i.s).append("\n");
         }
 
         classScope = null;
