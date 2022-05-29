@@ -195,7 +195,7 @@ public class GlobalTableBuilder implements Visitor {
 
     private void createClassTable(String classId, String superId){
         if(gT.classTypes.containsKey(classId)){
-            System.out.println("Class already defined");
+            System.err.println("Semantic Error: Class already defined");
             typeError = true;
             return;
         }

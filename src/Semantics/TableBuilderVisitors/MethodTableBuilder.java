@@ -61,14 +61,14 @@ public class MethodTableBuilder implements Visitor {
     public void visit(VarDecl n) {
         MethodSymbolTable mt = gT.classTables.get(classScope).methodTables.get(methodScope);
         if(mt.vars.containsKey(n.i.s) || mt.params.containsKey(n.i.s)){
-            System.out.println("Variable has already been declared " + n.line_number);
+            System.err.println("Semantic Error: Variable has already been declared " + n.line_number);
             typeError = true;
             return;
         }
         if(n.t instanceof IdentifierType){
             // It is a class
             if(!gT.classTypes.containsKey(((IdentifierType) n.t).s)){
-                System.out.println("Type does not exist on line " + n.line_number);
+                System.err.println("Semantic Error: Type does not exist on line " + n.line_number);
                 typeError = true;
                 return;
             }
@@ -77,6 +77,7 @@ public class MethodTableBuilder implements Visitor {
         }else if(n.t instanceof IntegerType){
             mt.vars.put(n.i.s, PrimitiveType.INT);
             mt.vars.get(n.i.s).offset = offset;
+            System.out.println(n.i.s + offset);
         }else if(n.t instanceof BooleanType){
             mt.vars.put(n.i.s, PrimitiveType.BOOLEAN);
             mt.vars.get(n.i.s).offset = offset;
@@ -107,14 +108,14 @@ public class MethodTableBuilder implements Visitor {
         MethodSymbolTable mt = gT.classTables.get(classScope).methodTables.get(methodScope);
         MethodType mType = gT.classTables.get(classScope).methods.get(methodScope);
         if(mt.params.containsKey(n.i.s)){
-            System.out.println("Id has already been declared " + n.line_number);
+            System.err.println("Semantic Error: Id has already been declared " + n.line_number);
             typeError = true;
             return;
         }
         if(n.t instanceof IdentifierType){
             // It is a class
             if(!gT.classTypes.containsKey(((IdentifierType) n.t).s)){
-                System.out.println("Type does not exist on line " + n.line_number);
+                System.err.println("Semantic Error: Type does not exist on line " + n.line_number);
                 typeError = true;
                 return;
             }

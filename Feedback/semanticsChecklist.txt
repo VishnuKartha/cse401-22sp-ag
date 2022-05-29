@@ -1,0 +1,6 @@
+CSE 401 18sp Project III - Semantics
+
+False negative: an overridden method in a subclass must have the same argument type list as the superclass’s method. (-2)
+
+False negative: an overridden method in a subclass must have either the same return type or a subclass of the return type in the original superclass method. (-2)
+

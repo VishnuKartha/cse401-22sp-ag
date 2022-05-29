@@ -11,11 +11,17 @@ _asm_main:
 	movq	%rdx,0(%rax)
 	movq	%rax,%rdi
 	movq	0(%rdi),%rax
+	subq	$8,%rsp
+	movq	$5,%rax
+	pushq	%rax
+	movq	$4,%rax
+	pushq	%rax
+	movq	$3,%rax
+	pushq	%rax
 	call	*8(%rax)
 
 	movq	%rax,%rdi
 	call	_put
-
 	movq	%rbp,%rsp
 	popq	%rbp
 	ret
@@ -23,7 +29,23 @@ _asm_main:
 Fac$sumOf:
 	pushq	%rbp
 	movq	%rsp,%rbp
-	subq	16,%rsp
+	subq	$24,%rsp
+	movq	32(%rbp),%rax
+	movq	%rax,-16(%rbp)
+	movq	32(%rbp),%rax
+	movq	%rax,-16(%rbp)
+	movq	32(%rbp),%rax
+	movq	%rax,-16(%rbp)
+	movq	-16(%rbp),%rax
+	pushq	%rax
+	movq	-16(%rbp),%rax
+	popq	%rdx
+	addq	%rdx,%rax
+
+	pushq	%rax
+	movq	-16(%rbp),%rax
+	popq	%rdx
+	addq	%rdx,%rax
 
 	movq	%rbp,%rsp
 	popq	%rbp

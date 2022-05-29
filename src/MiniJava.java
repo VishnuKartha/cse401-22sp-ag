@@ -30,19 +30,23 @@ public class MiniJava {
                 root = p.parse();
                 @SuppressWarnings("unchecked")
                 Program program = (Program) root.value;
-                boolean error = false;
                 GlobalTableBuilder gt = new GlobalTableBuilder();
                 program.accept(gt);
-                error = gt.errorStatus();
+                boolean error = gt.errorStatus();
                 GlobalSymbolTable gst = gt.getGlobal();
                 ClassTableBuilder ct = new ClassTableBuilder(gst);
                 program.accept(ct);
+                error = error || ct.errorStatus();
                 gst = ct.getGlobalTable();
                 MethodTableBuilder mt = new MethodTableBuilder(gst);
                 program.accept(mt);
+                error = error || mt.errorStatus();
                 gst = mt.getGlobalTable();
-                program.accept(new TypeChecker(gst));
+                TypeChecker tp = new TypeChecker(gst);
+                program.accept(tp);
+                error = error || tp.errorStatus();
                 if(error){
+                    System.err.println("Semantic Errors:");
                     System.exit(1);
                 }
                 CodeGenVisitor cgv = new CodeGenVisitor(gst);
@@ -56,6 +60,7 @@ public class MiniJava {
                 bw.close();
                 System.out.print(cgv.getCodeGen());
                 System.exit(0);
+
 
             } catch (Exception e) {
                 System.err.println("Unexpected error: ");
@@ -127,23 +132,27 @@ public class MiniJava {
                 root = p.parse();
                 @SuppressWarnings("unchecked")
                 Program program = (Program) root.value;
-                boolean error = false;
                 GlobalTableBuilder gt = new GlobalTableBuilder();
                 program.accept(gt);
-                error = gt.errorStatus();
+                boolean error = gt.errorStatus();
                 GlobalSymbolTable gst = gt.getGlobal();
                 ClassTableBuilder ct = new ClassTableBuilder(gst);
                 program.accept(ct);
+                error = error || ct.errorStatus();
                 gst = ct.getGlobalTable();
                 MethodTableBuilder mt = new MethodTableBuilder(gst);
                 program.accept(mt);
+                error = error || mt.errorStatus();
                 gst = mt.getGlobalTable();
-                program.accept(new TypeChecker(gst));
+                TypeChecker tp = new TypeChecker(gst);
+                program.accept(tp);
+                error = error || tp.errorStatus();
+                System.out.println(gst.toString());
                 if(error){
                     System.exit(1);
+                }else{
+                    System.exit(0);
                 }
-                System.out.println(gst.toString());
-                System.exit(0);
 
             } catch (Exception e) {
                 System.err.println("Unexpected internal compiler error: ");

@@ -55,6 +55,7 @@ public class ClassTableBuilder implements Visitor {
             offset = i;
             n.ml.get(i).accept(this);
         }
+        offset = 0;
         classScope = null;
 
     }
@@ -64,7 +65,7 @@ public class ClassTableBuilder implements Visitor {
 
 
         if(!gT.classTypes.containsKey(n.j.s)){
-            System.out.println(n.j.s + " has not been defined at line " + n.line_number);
+            System.err.println("Semantic Error: " + n.j.s + " has not been defined at line " + n.line_number);
         }
         classScope = n.i.s;
         for (int i = 0; i < n.vl.size(); i++) {
@@ -80,14 +81,14 @@ public class ClassTableBuilder implements Visitor {
     public void visit(VarDecl n) {
         ClassSymbolTable ct = gT.classTables.get(classScope);
         if(ct.fields.containsKey(n.i.s)){
-            System.out.println("Class has fields with same name on line " + n.line_number);
+            System.err.println("Semantic Error: Class has fields with same name on line " + n.line_number);
             typeError = true;
             return;
         }
         if(n.t instanceof IdentifierType){
             // It is a class
             if(!gT.classTypes.containsKey(((IdentifierType) n.t).s)){
-                System.out.println("Class does not exist on line " + n.line_number);
+                System.err.println("Semantic Error: Class does not exist on line " + n.line_number);
                 typeError = true;
                 return;
             }
@@ -109,18 +110,17 @@ public class ClassTableBuilder implements Visitor {
     public void visit(MethodDecl n) {
         ClassSymbolTable ct = gT.classTables.get(classScope);
         if(ct.methods.containsKey(n.i.s)){
-            System.out.println("Class has fields with same name on line " + n.line_number);
+            System.err.println("Semantic Error: Class has methods with same name on line " + n.line_number);
             typeError = true;
             return;
         }
         if(n.t instanceof IdentifierType){
             // It is a class
             if(!gT.classTypes.containsKey(((IdentifierType) n.t).s)){
-                System.out.println("Return type does not exist on line " + n.line_number);
+                System.err.println("Semantic Error: Return type does not exist on line " + n.line_number);
                 typeError = true;
-                return;
             }
-            ct.methods.put(n.i.s, new MethodType(gT.classTypes.get(((IdentifierType) n.t).s), new ArrayList<>()));
+            ct.methods.put(n.i.s, new MethodType(Undef.UNDEFINED, new ArrayList<>()));
             ct.methods.get(n.i.s).offset = offset;
         }else if(n.t instanceof IntegerType){
             ct.methods.put(n.i.s, new MethodType(PrimitiveType.INT, new ArrayList<>()));

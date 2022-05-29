@@ -2,6 +2,7 @@ import AST.*;
 import AST.Visitor.Visitor;
 import Semantics.SymbolTables.GlobalSymbolTable;
 import Types.ClassType;
+import Types.MethodType;
 import Types.MiniJavaType;
 
 import java.util.HashMap;
@@ -16,7 +17,7 @@ public class CodeGenVisitor implements Visitor {
     private String methodScope;
 
     private Map<String,Integer> labelsUsed;
-    private int stackSpace;
+    private int stackVariables;
 
 
     public CodeGenVisitor(GlobalSymbolTable gst){
@@ -25,7 +26,7 @@ public class CodeGenVisitor implements Visitor {
         vtable= new StringBuilder();
         vtable.append("\t\t.data\n");
         this.labelsUsed = new HashMap<>();
-        stackSpace = 0;
+        stackVariables = 0;
     }
 
     public String getCodeGen(){
@@ -189,14 +190,22 @@ public class CodeGenVisitor implements Visitor {
     @Override
     public void visit(Assign n) {
         MiniJavaType id;
+
+        n.e.accept(this); // Value is in %rax
+
+        // See if it is Local Var
         if(gT.classTables.get(classScope).methodTables.get(methodScope).vars.containsKey(n.i.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).vars.get(n.i.s);
+            gen("movq", "%rax", "-" + 8*id.offset + "(%rbp)");
+            System.out.println(n.i.s+id.offset);
         }else if(gT.classTables.get(classScope).methodTables.get(methodScope).params.containsKey(n.i.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).params.get(n.i.s);
+            gen("movq", "%rax", (16 + 8 * id.offset) + "(%rbp)");
         }else{
             id = gT.classTables.get(classScope).fields.get(n.i.s);
+            gen("movq", "%rax", (8 + 8 * id.offset) + "(%rdi)");
         }
-        int offset = id.offset;
+
 
     }
 
@@ -215,6 +224,7 @@ public class CodeGenVisitor implements Visitor {
 
         String negativeSign = (offset <= 0) ? "" : "-";
         offset = Math.abs(offset);
+
 
         n.e1.accept(this);
         sb.append("\tpushq\t%rax\n");
@@ -289,6 +299,15 @@ public class CodeGenVisitor implements Visitor {
         sb.append("\tmovq\t%rax,%rdi\n");
         sb.append("\tmovq\t0(%rdi),%rax\n");
         ClassType ct = (ClassType) n.e.type;
+        MethodType mt = gT.classTables.get(ct.type).methods.get(n.i.s);
+        stackVariables += n.el.size();
+        if(stackVariables%2 != 0){
+            gen("subq", "$8", "%rsp");
+        }
+        for(int i = n.el.size() - 1; i >= 0 ; i--){
+            n.el.get(i).accept(this);
+            gen("pushq", "%rax");
+        }
         int offset = gT.classTables.get(ct.type).methods.get(n.i.s).offset;
         sb.append("\tcall\t*").append(8 + 8*offset).append("(%rax)\n");
         sb.append("\n");
@@ -313,7 +332,17 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(IdentifierExp n) {
-
+        MiniJavaType id;
+        if(gT.classTables.get(classScope).methodTables.get(methodScope).vars.containsKey(n.s)){
+            id = gT.classTables.get(classScope).methodTables.get(methodScope).vars.get(n.s);
+            gen("movq",  "-" + 8*id.offset + "(%rbp)", "%rax");
+        }else if(gT.classTables.get(classScope).methodTables.get(methodScope).params.containsKey(n.s)){
+            id = gT.classTables.get(classScope).methodTables.get(methodScope).params.get(n.s);
+            gen("movq", (16 + 8 * id.offset) + "(%rbp)", "%rax");
+        }else{
+            id = gT.classTables.get(classScope).fields.get(n.s);
+            gen("movq", (8 + 8 * id.offset) + "(%rdi)", "%rax");
+        }
     }
 
     @Override

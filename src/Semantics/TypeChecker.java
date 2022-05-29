@@ -59,7 +59,7 @@ public class TypeChecker implements Visitor {
             ct = globalTable.classTypes.get(ct.superType);
             // Found cycle
             if(visited.contains(ct.type)){
-                System.out.println("Invalid inheritance structure");
+                System.err.println("Semantic Error: An inheritance cycle was found");
                 typeError = true;
                 return;
             }
@@ -80,32 +80,43 @@ public class TypeChecker implements Visitor {
     public void visit(MethodDecl n) {
         String temp = classScope;
         methodScope = n.i.s;
-        // Check if we can override
+
+        // Check if method is overriding
         MethodType mta = globalTable.classTables.get(classScope).methods.get(methodScope);
         ClassType ct = globalTable.classTypes.get(classScope);
-        boolean canOverride = true;
+        boolean isOverriding = false;
         if(ct.superType != null){
             // Might not have checked cyclicness
             HashSet<String> visited = new HashSet<>();
             visited.add(classScope);
             while(ct.superType != null && !visited.contains(ct.superType) && globalTable.classTypes.containsKey(ct.superType)){
                 ct = globalTable.classTypes.get(ct.superType);
+                // Super Class contains the method
+                boolean overrideSuccess = true;
                 if(globalTable.classTables.get(ct.type).methods.containsKey(methodScope)){
+                    // SuperClass method
+                    isOverriding = true;
                     MethodType mtb = globalTable.classTables.get(ct.type).methods.get(methodScope);
                     if(mta.returnType.assignable(mtb.returnType, globalTable) && mta.params.size() == mtb.params.size()){
                         for(int i =0; i < mta.params.size(); i++){
-                            if(!mta.params.get(i).typeEquals(mtb.params.get(i))){
-                                canOverride = false;
+                            if(!mta.params.get(i).assignable(mtb.params.get(i), globalTable)){
+                                isOverriding = false;
                             }
                         }
-                        if(canOverride){
-                            classScope = ct.type;
+                        if(!n.e.type.assignable(mtb.returnType, globalTable)){
+                            overrideSuccess = false;
                         }
+
                     }else{
-                        canOverride = false;
+                        overrideSuccess = false;
                     }
+                    if (!overrideSuccess) {
+                        System.err.println("Semantic Error: Invalid method overriding");
+                    }
+                    break;
                 }
                 visited.add(ct.type);
+
             }
         }
         for(int i =0; i < n.sl.size(); i++){
@@ -114,7 +125,7 @@ public class TypeChecker implements Visitor {
         n.e.accept(this);
         MethodType mType = globalTable.classTables.get(classScope).methods.get(methodScope);
         if(!n.e.type.assignable(mType.returnType, globalTable)){
-            System.out.println("Return type does not match at line " + n.line_number);
+            System.err.println("Semantic Error: Expression does not match return type at line" + n.line_number);
             typeError = true;
         }
         n.type = mType;
@@ -158,7 +169,8 @@ public class TypeChecker implements Visitor {
     public void visit(If n) {
         n.e.accept(this);
         if(!n.e.type.typeEquals(PrimitiveType.BOOLEAN)){
-            System.out.println("Expression must be type boolean on line " + n.line_number);
+            System.err.println("Semantic Error: Expression must be type boolean on line " + n.line_number);
+            typeError = true;
         }
         n.s1.accept(this);
         n.s2.accept(this);
@@ -168,7 +180,8 @@ public class TypeChecker implements Visitor {
     public void visit(While n) {
         n.e.accept(this);
         if(!n.e.type.typeEquals(PrimitiveType.BOOLEAN)){
-            System.out.println("Expression must be type boolean on line " + n.line_number);
+            System.err.println("Semantic Error: Expression must be type boolean on line " + n.line_number);
+            typeError = true;
         }
         n.s.accept(this);
     }
@@ -177,7 +190,8 @@ public class TypeChecker implements Visitor {
     public void visit(Print n) {
         n.e.accept(this);
         if(!n.e.type.typeEquals(PrimitiveType.INT)){
-            System.out.println("Can only print integer values on line " + n.line_number);
+            System.err.println("Semantic Error: Can only print integer values on line " + n.line_number);
+            typeError = true;
         }
     }
 
@@ -186,14 +200,14 @@ public class TypeChecker implements Visitor {
         MethodSymbolTable mt = globalTable.classTables.get(classScope).methodTables.get(methodScope);
         MiniJavaType l = inheritIdentifier(n.i.s);
         if(l == null){
-            System.out.println("Id was never declared on line " + n.line_number);
+            System.err.println("Semantic Error: Id was not declared in scope on line " + n.line_number);
             typeError = true;
             n.type = Undef.UNDEFINED;
             mt.vars.put(n.i.s, n.type);
         }
         n.e.accept(this);
         if(!n.e.type.assignable(l,globalTable)){
-            System.out.println("Expression cannot be assigned on line " + n.line_number);
+            System.err.println("Semantic Error: Expression is not assignable to " + n.i.s + " on line " + n.line_number);
             typeError = true;
             return;
         }
@@ -205,25 +219,25 @@ public class TypeChecker implements Visitor {
         MethodSymbolTable mt = globalTable.classTables.get(classScope).methodTables.get(methodScope);
         MiniJavaType l = inheritIdentifier(n.i.s);
         if(l == null){
-            System.out.println("Id was never declared on line " + n.line_number);
+            System.err.println("Semantic Error: Id was never declared on line " + n.line_number);
             typeError = true;
             n.type = Undef.UNDEFINED;
             mt.vars.put(n.i.s, n.type);
         }
         if(!(l instanceof ArrayType)){
-            System.out.println("Id is not an array on line " + n.line_number);
+            System.err.println("Semantic Error: Id is not an array on line " + n.line_number);
             typeError = true;
             return;
         }
         n.e1.accept(this);
         if(!n.e1.type.typeEquals(PrimitiveType.INT)){
-            System.out.println("Array index must be integer on line " + n.line_number);
+            System.err.println("Semantic Error: Array index must be integer on line " + n.line_number);
             typeError = true;
             return;
         }
         n.e2.accept(this);
         if(!n.e2.type.typeEquals(PrimitiveType.INT)){
-            System.out.println("Array value must be type integer on line " + n.line_number);
+            System.err.println("Semantic Error: Array element must be type integer on line " + n.line_number);
             typeError = true;
         }
     }
@@ -233,7 +247,7 @@ public class TypeChecker implements Visitor {
         n.e1.accept(this);
         n.e2.accept(this);
         if(!(n.e1.type.typeEquals(PrimitiveType.BOOLEAN) && n.e2.type.typeEquals(PrimitiveType.BOOLEAN))){
-            System.out.println("Both expressions must be booleans on line " + n.line_number);
+            System.err.println("Semantic Error: Both expressions must be booleans on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
@@ -246,7 +260,7 @@ public class TypeChecker implements Visitor {
         n.e1.accept(this);
         n.e2.accept(this);
         if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
-            System.out.println("Both expressions must be integers on line " + n.line_number);
+            System.err.println("Semantic Error: Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
@@ -259,7 +273,7 @@ public class TypeChecker implements Visitor {
         n.e1.accept(this);
         n.e2.accept(this);
         if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
-            System.out.println("Both expressions must be integers on line " + n.line_number);
+            System.err.println("Semantic Error: Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
@@ -272,7 +286,7 @@ public class TypeChecker implements Visitor {
         n.e1.accept(this);
         n.e2.accept(this);
         if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
-            System.out.println("Both expressions must be integers on line " + n.line_number);
+            System.err.println("Semantic Error: Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = false;
             return;
@@ -285,7 +299,7 @@ public class TypeChecker implements Visitor {
         n.e1.accept(this);
         n.e2.accept(this);
         if(!(n.e1.type.typeEquals(PrimitiveType.INT) && n.e2.type.typeEquals(PrimitiveType.INT))){
-            System.out.println("Both expressions must be integers on line " + n.line_number);
+            System.err.println("Semantic Error: Both expressions must be integers on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
@@ -297,19 +311,19 @@ public class TypeChecker implements Visitor {
     public void visit(ArrayLookup n) {
         n.e1.accept(this);
         if(!(n.e1.type instanceof ArrayType)){
-            System.out.println("Expression is not an array at line " + n.line_number);
+            System.err.println("Semantic Error: Expression is not an array at line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
-        }else{
-            n.type = ((ArrayType) n.e1.type).element;
         }
         n.e2.accept(this);
         if(!n.e2.type.typeEquals(PrimitiveType.INT)){
-            System.out.println("Array index must be an integer on line " + n.line_number);
+            System.err.println("Semantic Error: Array index must be an integer on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
+        }else{
+            n.type = PrimitiveType.INT;
         }
-        n.type = PrimitiveType.INT;
+
 
     }
 
@@ -317,11 +331,11 @@ public class TypeChecker implements Visitor {
     public void visit(ArrayLength n) {
         n.e.accept(this);
         if(n.e.type.typeEquals(Undef.UNDEFINED)){
-            System.out.println("Array is undefined on line " + n.line_number);
+            System.err.println("Semantic Error: Array is undefined on line " + n.line_number);
             n.type = Undef.UNDEFINED;
         }
         if(!(n.e.type instanceof ArrayType)){
-            System.out.println("Expression is not an array at line " + n.line_number);
+            System.err.println("Semantic Error: Expression is not an array at line " + n.line_number);
             n.type = Undef.UNDEFINED;
         }else{
             n.type = PrimitiveType.INT;
@@ -334,14 +348,14 @@ public class TypeChecker implements Visitor {
         n.e.accept(this);
         // e has to be a class
         if(!(n.e.type instanceof ClassType)){
-            System.out.println("Expression must be a class on line " + n.line_number);
+            System.err.println("Semantic Error: Expression must be a class on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
         }
         MethodType mt = inheritMethod(n.i.s, ((ClassType) n.e.type).type);
         if (mt == null){
-            System.out.println("Method does not exist on line " + n.line_number);
+            System.err.println("Semantic Error: Method does not exist in class on line " + n.line_number);
             typeError = true;
             n.type = Undef.UNDEFINED;
             return;
@@ -353,13 +367,13 @@ public class TypeChecker implements Visitor {
             pl.add(n.el.get(i).type);
         }
         if(pl.size() != mt.params.size()){
-            System.out.println("Incorrect aount of args on line " + n.line_number);
+            System.err.println("Semantic Error: Incorrect amount of args on line " + n.line_number);
             typeError = true;
             return;
         }
         for(int i = 0; i < mt.params.size(); i++){
             if(!pl.get(i).assignable(mt.params.get(i),globalTable)){
-                System.out.println("Incorrect parameter types on line " + n.line_number);
+                System.err.println("Semantic Error: Incorrect parameter types on line " + n.line_number);
                 typeError = true;
                 return;
             }
@@ -388,7 +402,7 @@ public class TypeChecker implements Visitor {
         MethodSymbolTable mt = globalTable.classTables.get(classScope).methodTables.get(methodScope);
         MiniJavaType t = inheritIdentifier(n.s);
         if(t == null){
-            System.out.println("Id was never declared on line " + n.line_number);
+            System.err.println("Semantic Error: Id was never declared on line " + n.line_number);
             typeError = true;
             n.type = Undef.UNDEFINED;
             mt.vars.put(n.s, n.type);
@@ -406,7 +420,7 @@ public class TypeChecker implements Visitor {
     public void visit(NewArray n) {
         n.e.accept(this);
         if(!n.e.type.typeEquals(PrimitiveType.INT)){
-            System.out.println("Expression must be integer type on line "+ n.line_number);
+            System.err.println("Semantic Error: Expression must be integer type on line " + n.line_number);
             typeError = true;
             return;
         }
@@ -417,7 +431,7 @@ public class TypeChecker implements Visitor {
     @Override
     public void visit(NewObject n) {
         if(!globalTable.classTypes.containsKey(n.i.s)){
-            System.out.println("Creating class that does not exist on line " + n.line_number);
+            System.err.println("Semantic Error: Instantiating non-existent class on line " + n.line_number);
             typeError = true;
             n.type = Undef.UNDEFINED;
             return;
@@ -429,7 +443,7 @@ public class TypeChecker implements Visitor {
     public void visit(Not n) {
         n.e.accept(this);
         if(!(n.e.type.typeEquals(PrimitiveType.BOOLEAN))){
-            System.out.println("Expression must have type boolean on line " + n.line_number);
+            System.err.println("Semantic Error: Expression must have type boolean on line " + n.line_number);
             n.type = Undef.UNDEFINED;
             typeError = true;
             return;
@@ -459,7 +473,6 @@ public class TypeChecker implements Visitor {
         ClassType ct = globalTable.classTypes.get(classScope);
         HashSet<String> visited= new HashSet<>();
         visited.add(ct.type);
-        System.out.println(ct.type);
         while(ct.superType != null && !visited.contains(ct.superType) && globalTable.classTypes.containsKey(ct.superType)){
             ct = globalTable.classTypes.get(ct.superType);
             st = globalTable.classTables.get(ct.type);
