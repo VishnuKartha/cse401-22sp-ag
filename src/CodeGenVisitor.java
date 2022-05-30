@@ -44,6 +44,8 @@ public class CodeGenVisitor implements Visitor {
         }
     }
 
+
+
     @Override
     public void visit(MainClass n) {
         sb.append("_asm_main:\n");
@@ -73,9 +75,12 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(ClassDeclExtends n) {
+        classScope = n.i.s;
+        vtable.append(n.i.s).append("$$:\t.quad").append(n.j.s).append("$$\n");
         for(int i =0; i < n.ml.size(); i++){
             n.ml.get(i).accept(this);
         }
+        classScope = null;
 
     }
 
@@ -384,7 +389,7 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(This n) {
-
+        gen("movq", "%rdi", "%rax");
     }
 
     @Override
