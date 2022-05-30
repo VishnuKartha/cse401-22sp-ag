@@ -142,10 +142,10 @@ public class CodeGenVisitor implements Visitor {
         n.e.accept(this);
 
         n.e.accept(this);
-        if(n.e instanceof True ||n.e instanceof False || n.e instanceof IdentifierExp || n.e instanceof Call || n.e instanceof Not) {
-            gen("cmpq", 0, "%rax");
-            gen("je", else_);
-        }
+
+        gen("cmpq", 0, "%rax");
+        gen("je", else_);
+
 
         n.s1.accept(this);
         gen("jmp", end_if);
@@ -168,10 +168,9 @@ public class CodeGenVisitor implements Visitor {
         n.e.target = end_while;
 
         n.e.accept(this);
-        if(n.e instanceof True ||n.e instanceof False || n.e instanceof IdentifierExp || n.e instanceof Call || n.e instanceof Not) {
-            gen("cmpq", 0, "%rax");
-            gen("je", end_while);
-        }
+        gen("cmpq", 0, "%rax");
+        gen("je", end_while);
+
         gen(body + ":");
 
         n.s.accept(this);
@@ -235,21 +234,67 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(And n) {
+        String endAnd = generateLabel("end");
+        String storeTrue = generateLabel("storeTrueAnd");
+        String storeFalse = generateLabel("storeFalseAnd");
+
+
+        n.e1.accept(this);
+        gen("pushq","%rax");
+        gen("cmpq", 0, "%rax");
+        gen("je", storeFalse);
+        n.e2.accept(this);
+        gen("cmpq", 0, "%rax");
+        gen("je", storeFalse);
+        gen("jmp", storeTrue);
+
+
+
+        gen(storeFalse+":");
+        gen("movq",0,"%rax");
+
+        gen("jmp", endAnd);
+
+
+
+        gen(storeTrue+":");
+        gen("movq",1,"%rax");
+
+
+        gen(endAnd+":");
+
+
+
 
     }
 
     @Override
     public void visit(LessThan n) {
+//        String storeFalse = generateLabel("storeFalse");
+        String storeTrue = generateLabel("storeTrueLessThan");
+        String endLessThan = generateLabel("endLessThan");
+
+
+
         n.e1.accept(this);
         gen("pushq","%rax");
         n.e2.accept(this);
         gen("popq","%rdx");
         gen("cmpq","%rdx","%rax");
-        if(n.sense) {
-            gen("jl", n.target);
-        } else {
-            gen("jge", n.target);
-        }
+
+        gen("jl" ,storeTrue);
+
+//        gen(storeFalse + ":");
+        gen("movq",0,"%rax");
+        gen("jmp",endLessThan);
+
+        gen(storeTrue + ":");
+        gen("movq",1,"%rax");
+        gen(endLessThan + ":");
+
+
+
+
     }
 
     @Override
@@ -366,14 +411,11 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(Not n) {
-        n.e.sense = !n.sense;
-        if (n.e instanceof True ||
-                n.e instanceof False ||
-                n.e instanceof IdentifierExp ||
-                n.e instanceof Call) {
-            gen("xor", 1, "%rax");
 
-        }
+        n.e.accept(this);
+        gen("pushq","%rax");
+        gen("xor", 1, "%rax");
+
     }
 
     @Override
@@ -412,4 +454,5 @@ public class CodeGenVisitor implements Visitor {
     private void gen(String instruction, String arg) {
         gen("\t" + instruction + "\t" + arg);
     }
+
 }
