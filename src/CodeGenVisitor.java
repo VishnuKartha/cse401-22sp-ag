@@ -162,7 +162,7 @@ public class CodeGenVisitor implements Visitor {
         String body = generateLabel("body_while");
 
 
-        sb.append(test + ":");
+        gen(test + ":");
 
 
         n.e.accept(this);
@@ -238,7 +238,6 @@ public class CodeGenVisitor implements Visitor {
 
 
         n.e1.accept(this);
-        gen("pushq","%rax");
         gen("cmpq", 0, "%rax");
         gen("je", storeFalse);
         n.e2.accept(this);
@@ -327,12 +326,36 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(ArrayLookup n) {
+        String successfullBoundsCheck = generateLabel("ArrayLookupSuccessfullBoundsCheck");
+        String unsuccessfullBoundsCheck = generateLabel("ArrayLookupUnsuccessfullBoundsCheck");
+        String endArrayLookUp = generateLabel("endArrayLookUp");
+
+
+        n.e1.accept(this);
+        gen("pushq", "%rax");
+        stackVariables++;
+        n.e2.accept(this); // rax has the index of the array
+        gen("popq", "%rdx"); // rdx has the address of array
+        stackVariables--;
+        gen("cmpq","0","(%rdx)");
+        gen("jl",unsuccessfullBoundsCheck);
+        gen("cmpq","%rax","(%rdx)");
+        gen("jg",unsuccessfullBoundsCheck);
+        gen("jmp",successfullBoundsCheck);
+        gen(unsuccessfullBoundsCheck+":");
+        gen("call","_ArrayOutofBoundsError");
+
+        gen(successfullBoundsCheck+":");
+        gen("movq", "8(%rdx,%rax,8)", "%rax");
+
+        gen(endArrayLookUp+":");
 
     }
 
     @Override
     public void visit(ArrayLength n) {
-
+        n.e.accept(this);
+        gen("movq", "(%rax)", "%rax");
     }
 
     @Override
@@ -394,13 +417,28 @@ public class CodeGenVisitor implements Visitor {
 
     @Override
     public void visit(NewArray n) {
-
+        n.e.accept(this);
+        // num elements of array stored in rax
+        gen("pushq", "%rax"); // save the array len
+        stackVariables++;
+        gen("addq",1, "%rax"); // gets space to hold the length of the array information
+        gen("mulq" , 8, "%rax"); // 8 bytes per element
+        if(stackVariables%2 != 0){
+            gen("subq", "$8", "%rsp");
+        }
+        gen("call","_mjcalloc"); // address of allocated state stored in %rax
+        gen("popq", "%rdx"); // get the array len information into rdx
+        stackVariables--;
+        gen("movq", "%rdx", "(%rax)"); // store  the length of the array in first 8 bytes of array space
     }
 
     @Override
     public void visit(NewObject n) {
         int num_vars = gT.classTables.get(n.i.s).fields.size();
         gen("movq",(8 + 8*num_vars),"%rdi");
+        if(stackVariables%2 != 0){
+            gen("subq", "$8", "%rsp");
+        }
         gen("call","_mjcalloc");
         gen("leaq",n.i.s + "$$(%rip),%rdx");
         gen("movq","%rdx","0(%rax)");
@@ -411,7 +449,6 @@ public class CodeGenVisitor implements Visitor {
     public void visit(Not n) {
 
         n.e.accept(this);
-        gen("pushq","%rax");
         gen("xor", 1, "%rax");
 
     }
