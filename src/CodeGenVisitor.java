@@ -136,12 +136,8 @@ public class CodeGenVisitor implements Visitor {
     public void visit(If n) {
         String else_ = generateLabel("else");
         String end_if = generateLabel("end_if");
-
-        n.e.sense = false;
-        n.e.target = else_;
         n.e.accept(this);
 
-        n.e.accept(this);
 
         gen("cmpq", 0, "%rax");
         gen("je", else_);
@@ -163,9 +159,6 @@ public class CodeGenVisitor implements Visitor {
 
         sb.append(test + ":");
 
-
-        n.e.sense = false;
-        n.e.target = end_while;
 
         n.e.accept(this);
         gen("cmpq", 0, "%rax");
