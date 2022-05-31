@@ -92,12 +92,10 @@ public class CodeGenCopy implements Visitor {
     public void visit(MainClass n) {
         gen("_asm_main:");
         gen("pushq", "%rbp");
-        stackSize += 8;
         gen("movq", "%rsp", "%rbp");
         n.s.accept(this);
         gen("movq", "%rbp", "%rsp");
         gen("popq", "%rbp");
-        stackSize -= 8;
         gen("ret", "");
         vt.append(n.i1.s + "$$: .quad 0\n");
     }
@@ -291,7 +289,7 @@ public class CodeGenCopy implements Visitor {
         ClassSymbolTable cst = gst.classTables.get(currClassName);
         if (cst.fields.containsKey(n.i.s)) {
             int offset = cst.fields.get(n.i.s).offset;
-            gen("movq", "%rax", offset + "(%rdi)");
+            gen("movq", "%rax", "-" + (8 + 8*offset) + "(%rdi)");
             return;
         }
         ClassType ct = gst.classTypes.get(currClassName);
@@ -315,7 +313,7 @@ public class CodeGenCopy implements Visitor {
         MethodSymbolTable lst = gst.classTables.get(currClassName).methodTables.get(currMethodName);
         if (lst.vars.containsKey(n.i.s)) {
             int offset = lst.vars.get(n.i.s).offset;
-            gen("movq", "-" + offset + "(%rbp)", "%rcx");
+            gen("movq", "-" + (8 + 8*offset) + "(%rbp)", "%rcx");
         }else if(lst.params.containsKey(n.i.s)){
             int offset = lst.params.get(n.i.s).offset;
             gen("movq", (16 + 8*offset) + "(%rbp)", "%rcx");
@@ -323,13 +321,13 @@ public class CodeGenCopy implements Visitor {
             ClassSymbolTable cst = gst.classTables.get(currClassName);
             if (cst.fields.containsKey(n.i.s)) {
                 int offset = cst.fields.get(n.i.s).offset;
-                gen("movq",  (8 + 8*offset) + "(%rdi)", "%rcx");
+                gen("movq",  "-" + (8 + 8*offset) + "(%rdi)", "%rcx");
             } else {
                 ClassType ct = gst.classTypes.get(currClassName);
                 while (ct.superType != null) {
                     if (gst.classTables.get(ct.superType).fields.containsKey(n.i.s)) {
                         int offset = gst.classTables.get(ct.superType).fields.get(n.i.s).offset;
-                        gen("movq", (8 + 8*offset) + "(%rdi)", "%rcx");
+                        gen("movq", "-" + (8 + 8*offset) + "(%rdi)", "%rcx");
                         break;
                     }
                     ct = gst.classTypes.get(ct.superType);
@@ -573,14 +571,14 @@ public class CodeGenCopy implements Visitor {
         ClassSymbolTable cst = gst.classTables.get(currClassName);
         if (cst.fields.containsKey(n.s)) {
             int offset = cst.fields.get(n.s).offset;
-            gen("movq", offset + "(%rdi)", "%rax");
+            gen("movq", "-" + (8 + 8*offset) + "(%rdi)", "%rax");
             return;
         }
         ClassType ct = gst.classTypes.get(currClassName);
         while (ct.superType != null) {
             if (gst.classTables.get(ct.superType).fields.containsKey(n.s)) {
                 int offset = gst.classTables.get(ct.superType).fields.get(n.s).offset;
-                gen("movq", offset + "(%rdi)", "%rax");
+                gen("movq", "-" + (8 + 8*offset) + "(%rdi)", "%rax");
                 return;
             }
             ct = gst.classTypes.get(ct.superType);
