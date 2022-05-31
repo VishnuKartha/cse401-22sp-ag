@@ -457,7 +457,7 @@ public class TypeChecker implements Visitor {
         if(st.fields.containsKey(id)){
             return st.fields.get(id);
         }
-        // Couldn't find in current method scope
+        // Couldn't find in current class scope
         ClassType ct = globalTable.classTypes.get(classScope);
         HashSet<String> visited= new HashSet<>();
         visited.add(ct.type);

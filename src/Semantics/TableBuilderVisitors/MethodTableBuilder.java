@@ -73,16 +73,16 @@ public class MethodTableBuilder implements Visitor {
                 return;
             }
             mt.vars.put(n.i.s, gT.classTypes.get(((IdentifierType) n.t).s));
-            mt.vars.get(n.i.s).offset = offset;
+            mt.offsets.put(n.i.s, offset);
         }else if(n.t instanceof IntegerType){
             mt.vars.put(n.i.s, new PrimitiveType(PrimitiveType.INT));
-            mt.vars.get(n.i.s).offset = offset;
+            mt.offsets.put(n.i.s, offset);
         }else if(n.t instanceof BooleanType){
             mt.vars.put(n.i.s, new PrimitiveType(PrimitiveType.BOOLEAN));
-            mt.vars.get(n.i.s).offset = offset;
+            mt.offsets.put(n.i.s, offset);
         }else if(n.t instanceof IntArrayType){
             mt.vars.put(n.i.s, new ArrayType(new PrimitiveType(PrimitiveType.INT)));
-            mt.vars.get(n.i.s).offset = offset;
+            mt.offsets.put(n.i.s, offset);
         }
     }
 
@@ -120,23 +120,22 @@ public class MethodTableBuilder implements Visitor {
             }
             mt.params.put(n.i.s, gT.classTypes.get(((IdentifierType) n.t).s));
             mType.params.add(gT.classTypes.get(((IdentifierType) n.t).s));
-            mt.params.get(n.i.s).offset = offset;
+            mt.offsets.put(n.i.s, offset);
         }else if(n.t instanceof IntegerType){
             PrimitiveType pt = new PrimitiveType(PrimitiveType.INT);
-            pt.offset = offset;
-            mt.params.put(n.i.s, pt);
+            mt.params.put(n.i.s, new PrimitiveType(PrimitiveType.INT));
             mType.params.add(pt);
+            mt.offsets.put(n.i.s, offset);
         }else if(n.t instanceof BooleanType){
             PrimitiveType pt = new PrimitiveType(PrimitiveType.BOOLEAN);
-            pt.offset = offset;
             mt.params.put(n.i.s, pt);
             mType.params.add(pt);
+            mt.offsets.put(n.i.s, offset);
         }else if(n.t instanceof IntArrayType){
             PrimitiveType pt = new PrimitiveType(PrimitiveType.INT);
-            pt.offset = offset;
             mt.params.put(n.i.s, new ArrayType(pt));
             mType.params.add(new ArrayType(pt));
-            mt.params.get(n.i.s).offset = offset;
+            mt.offsets.put(n.i.s, offset);
         }
     }
 

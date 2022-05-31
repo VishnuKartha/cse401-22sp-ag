@@ -7,24 +7,26 @@ _asm_main:
 	movq %rdi,%rbx
 	pushq %rdi
 	movq $8,%rdi
-	pushq %rax
 	call _mjcalloc
-	popq %rdx
 	popq %rdi
-	leaq One$$,%rdx
+	leaq One$$(%rip),%rdx
 	movq %rdx,0(%rax)
 	movq %rax,%rdi
+	pushq %rax
 	movq (%rdi),%rax
 	addq $8,%rax
 	call *(%rax)
+	popq %rdx
 	popq %rdi
 	pushq %rdi
 	movq %rax,%rdi
+	pushq %rax
 	call _put
+	popq %rdx
 	popq %rdi
 	movq %rbp,%rsp
 	popq %rbp
-	ret
+	ret 
 One$test:
 	pushq %rbp
 	movq %rsp,%rbp
@@ -34,6 +36,5 @@ One$test:
 	ret 
 	.data
 Factorial$$: .quad 0
-    .data
 One$$: .quad 0
 		.quad One$test

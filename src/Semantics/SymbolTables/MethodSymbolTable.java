@@ -8,11 +8,13 @@ import java.util.HashMap;
 public class MethodSymbolTable {
     public HashMap<String, MiniJavaType> params;
     public HashMap<String, MiniJavaType> vars;
+    public HashMap<String, Integer> offsets;
     public ClassSymbolTable top;
 
     public MethodSymbolTable(ClassSymbolTable parent){
         params = new HashMap<>();
         vars = new HashMap<>();
+        offsets = new HashMap<>();
         top = parent;
     }
 

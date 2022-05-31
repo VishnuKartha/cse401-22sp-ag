@@ -96,16 +96,16 @@ public class ClassTableBuilder implements Visitor {
                 return;
             }
             ct.fields.put(n.i.s, gT.classTypes.get(((IdentifierType) n.t).s));
-            ct.fields.get(n.i.s).offset = offset;
+            ct.fieldOffsets.put(n.i.s, offset);
         }else if(n.t instanceof IntegerType){
             ct.fields.put(n.i.s, new PrimitiveType(PrimitiveType.INT));
-            ct.fields.get(n.i.s).offset = offset;
+            ct.fieldOffsets.put(n.i.s, offset);
         }else if(n.t instanceof BooleanType){
             ct.fields.put(n.i.s, new PrimitiveType(PrimitiveType.BOOLEAN));
-            ct.fields.get(n.i.s).offset = offset;
+            ct.fieldOffsets.put(n.i.s, offset);
         }else if(n.t instanceof IntArrayType){
             ct.fields.put(n.i.s, new ArrayType(new PrimitiveType(PrimitiveType.INT)));
-            ct.fields.get(n.i.s).offset = offset;
+            ct.fieldOffsets.put(n.i.s, offset);
         }
     }
 

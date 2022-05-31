@@ -16,17 +16,17 @@ public class CodeGenVisitor implements Visitor {
 
     private String currMethodName;
 
-    private GlobalSymbolTable gst;
+    private final GlobalSymbolTable gst;
 
     private int stackSize;
 
     private boolean aligned;
 
-    private Map<String, Integer> labels;
+    private final Map<String, Integer> labels;
 
-    private StringBuilder sb;
+    private final StringBuilder sb;
 
-    private StringBuilder vt;
+    private final StringBuilder vt;
 
     public CodeGenVisitor(GlobalSymbolTable gst) {
         this.gst = gst;
@@ -52,7 +52,7 @@ public class CodeGenVisitor implements Visitor {
             }
         }
         gen("\t.text");
-        gen("\t.globl asm_main");
+        gen("\t.globl _asm_main");
         n.m.accept(this);
         for (int i = 0; i < n.cl.size(); i++) {
             n.cl.get(i).accept(this);
@@ -60,16 +60,14 @@ public class CodeGenVisitor implements Visitor {
     }
 
     public void visit(MainClass n) {
-        gen("asm_main:");
+        gen("_asm_main:");
         gen("pushq", "%rbp");
-        stackSize += 8;
         gen("movq", "%rsp", "%rbp");
         n.s.accept(this);
         gen("movq", "%rbp", "%rsp");
         gen("popq", "%rbp");
-        stackSize -= 8;
         gen("ret", "");
-        vt.append(n.i1.s + "$$: .quad 0\n");
+        vt.append(n.i1.s).append("$$: .quad 0\n");
     }
 
     public void visit(ClassDeclSimple n) {
@@ -77,9 +75,9 @@ public class CodeGenVisitor implements Visitor {
         for (int i = 0; i < n.ml.size(); i++) {
             n.ml.get(i).accept(this);
         }
-        vt.append(n.i.s + "$$: .quad 0\n");
+        vt.append(n.i.s).append("$$: .quad 0\n");
         for (int i = 0; i < n.ml.size(); i++) {
-            vt.append("\t\t.quad " + currClassName + "$" + n.ml.get(i).i.s).append("\n");
+            vt.append("\t\t.quad ").append(currClassName).append("$").append(n.ml.get(i).i.s).append("\n");
         }
         currClassName = "";
     }
@@ -89,7 +87,7 @@ public class CodeGenVisitor implements Visitor {
         for (int i = 0;i < n.ml.size(); i++) {
             n.ml.get(i).accept(this);
         }
-        vt.append(n.i.s + "$$: .quad " + n.j.s + "$$").append("\n");
+        vt.append(n.i.s).append("$$: .quad ").append(n.j.s).append("$$").append("\n");
         ClassType ct = gst.classTypes.get(n.i.s);
         HashMap<Integer, String> methodOffsets = new HashMap<>();
 
@@ -123,7 +121,7 @@ public class CodeGenVisitor implements Visitor {
             if(cta.superType != null && cta.superType.equals(b)){
                 ClassSymbolTable ct = gst.classTables.get(c);
                 for(String f : ct.fields.keySet()){
-                    ct.fields.get(f).offset = fo;
+                    ct.fieldOffsets.put(f, fo);
                     fo++;
                 }
                 for(String m : ct.methods.keySet()){
@@ -153,18 +151,18 @@ public class CodeGenVisitor implements Visitor {
         currMethodName = n.i.s;
         gen(currClassName + "$" + currMethodName + ":");
         gen("pushq", "%rbp");
-        stackSize += 8;
         gen("movq", "%rsp", "%rbp");
         if (n.vl.size() > 0) {
             gen("subq", 8 * n.vl.size(), "%rsp");
         }
+        stackSize += 8*n.vl.size();
         for (int i = 0; i < n.sl.size(); i++) {
             n.sl.get(i).accept(this);
         }
         n.e.accept(this);
         gen("movq", "%rbp", "%rsp");
+        stackSize -= 8*n.vl.size();
         gen("popq", "%rbp");
-        stackSize -= 8;
         gen("ret", "");
         currMethodName = "";
     }
@@ -184,7 +182,7 @@ public class CodeGenVisitor implements Visitor {
     public void visit(If n) {
         n.e.accept(this);
         gen("cmpq", 1, "%rax");
-        String elseLabel = "";
+        String elseLabel;
         if (!labels.containsKey("else")) {
             labels.put("else", 0);
         }
@@ -192,7 +190,7 @@ public class CodeGenVisitor implements Visitor {
         elseLabel = "else" + labels.get("else");
         gen("jne", elseLabel);
         n.s1.accept(this);
-        String doneLabel = "";
+        String doneLabel;
         if (!labels.containsKey("done")) {
             labels.put("done", 0);
         }
@@ -204,7 +202,7 @@ public class CodeGenVisitor implements Visitor {
         gen(doneLabel + ":");
     }
     public void visit(While n) {
-        String whileLabel = "";
+        String whileLabel;
         if (!labels.containsKey("while")) {
             labels.put("while", 0);
         }
@@ -213,7 +211,7 @@ public class CodeGenVisitor implements Visitor {
         gen(whileLabel + ":");
         n.e.accept(this);
         gen("cmpq", 1, "%rax");
-        String doneLabel = "";
+        String doneLabel;
         if (!labels.containsKey("done")) {
             labels.put("done", 0);
         }
@@ -235,7 +233,7 @@ public class CodeGenVisitor implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "put");
+        gen("call", "_put");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
@@ -249,24 +247,24 @@ public class CodeGenVisitor implements Visitor {
         n.e.accept(this);
         MethodSymbolTable lst = gst.classTables.get(currClassName).methodTables.get(currMethodName);
         if (lst.vars.containsKey(n.i.s)) {
-            int offset = lst.vars.get(n.i.s).offset;
+            int offset = lst.offsets.get(n.i.s);
             gen("movq", "%rax", "-" + (8 + 8*offset) + "(%rbp)");
             return;
         }else if(lst.params.containsKey(n.i.s)){
-            int offset = lst.params.get(n.i.s).offset;
+            int offset = lst.offsets.get(n.i.s);
             gen("movq", "%rax", (16 + 8*offset) + "(%rbp)");
             return;
         }
         ClassSymbolTable cst = gst.classTables.get(currClassName);
         if (cst.fields.containsKey(n.i.s)) {
-            int offset = cst.fields.get(n.i.s).offset;
+            int offset = cst.fieldOffsets.get(n.i.s);
             gen("movq", "%rax", "-" + (8 + 8*offset) + "(%rdi)");
             return;
         }
         ClassType ct = gst.classTypes.get(currClassName);
         while (ct.superType != null) {
             if (gst.classTables.get(ct.superType).fields.containsKey(n.i.s)) {
-                int offset = gst.classTables.get(ct.superType).fields.get(n.i.s).offset;
+                int offset = gst.classTables.get(ct.superType).fieldOffsets.get(n.i.s);
                 gen("movq", "%rax", "-" + (8 + 8*offset) + "(%rdi)");
                 return;
             }
@@ -283,21 +281,21 @@ public class CodeGenVisitor implements Visitor {
         stackSize -= 8;
         MethodSymbolTable lst = gst.classTables.get(currClassName).methodTables.get(currMethodName);
         if (lst.vars.containsKey(n.i.s)) {
-            int offset = lst.vars.get(n.i.s).offset;
+            int offset = lst.offsets.get(n.i.s);
             gen("movq", "-" + (8 + 8*offset) + "(%rbp)", "%rcx");
         }else if(lst.params.containsKey(n.i.s)){
-            int offset = lst.params.get(n.i.s).offset;
+            int offset = lst.offsets.get(n.i.s);
             gen("movq", (16 + 8*offset) + "(%rbp)", "%rcx");
         }else {
             ClassSymbolTable cst = gst.classTables.get(currClassName);
             if (cst.fields.containsKey(n.i.s)) {
-                int offset = cst.fields.get(n.i.s).offset;
+                int offset = cst.fieldOffsets.get(n.i.s);
                 gen("movq",  "-" + (8 + 8*offset) + "(%rdi)", "%rcx");
             } else {
                 ClassType ct = gst.classTypes.get(currClassName);
                 while (ct.superType != null) {
                     if (gst.classTables.get(ct.superType).fields.containsKey(n.i.s)) {
-                        int offset = gst.classTables.get(ct.superType).fields.get(n.i.s).offset;
+                        int offset = gst.classTables.get(ct.superType).fieldOffsets.get(n.i.s);
                         gen("movq", "-" + (8 + 8*offset) + "(%rdi)", "%rcx");
                         break;
                     }
@@ -306,7 +304,7 @@ public class CodeGenVisitor implements Visitor {
             }
         }
         gen("cmpq", "%rdx", "0(%rcx)");
-        String arrayIndexOutOfBoundsLabel = "";
+        String arrayIndexOutOfBoundsLabel;
         if (!labels.containsKey("arrayIndexOutOfBounds")) {
             labels.put("arrayIndexOutOfBounds", 0);
         }
@@ -316,7 +314,7 @@ public class CodeGenVisitor implements Visitor {
         gen("cmpq", 0, "%rdx");
         gen("jl", arrayIndexOutOfBoundsLabel);
         gen("movq", "%rax", "8(%rcx,%rdx,8)");
-        String doneLabel = "";
+        String doneLabel;
         if (!labels.containsKey("done")) {
             labels.put("done", 0);
         }
@@ -329,7 +327,7 @@ public class CodeGenVisitor implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "mjerror");
+        gen("call", "_mjerror");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
@@ -341,7 +339,7 @@ public class CodeGenVisitor implements Visitor {
     public void visit(And n) {
         n.e1.accept(this);
         gen("cmpq", 1, "%rax");
-        String setAndFalseLabel = "";
+        String setAndFalseLabel;
         if (!labels.containsKey("setAndFalse")) {
             labels.put("setAndFalse", 0);
         }
@@ -352,7 +350,7 @@ public class CodeGenVisitor implements Visitor {
         gen("cmpq", 1, "%rax");
         gen("jne", setAndFalseLabel);
         gen("movq", 1, "%rax");
-        String doneLabel = "";
+        String doneLabel;
         if (!labels.containsKey("done")) {
             labels.put("done", 0);
         }
@@ -372,7 +370,7 @@ public class CodeGenVisitor implements Visitor {
         gen("popq", "%rdx");
         stackSize -= 8;
         gen("cmpq", "%rdx", "%rax");
-        String setLessFalseLabel = "";
+        String setLessFalseLabel;
         if (!labels.containsKey("setLessFalse")) {
             labels.put("setLessFalse", 0);
         }
@@ -380,7 +378,7 @@ public class CodeGenVisitor implements Visitor {
         setLessFalseLabel = "setLessFalse" + labels.get("setLessFalse");
         gen("jng", setLessFalseLabel);
         gen("movq", 1, "%rax");
-        String doneLabel = "";
+        String doneLabel;
         if (!labels.containsKey("done")) {
             labels.put("done", 0);
         }
@@ -430,7 +428,7 @@ public class CodeGenVisitor implements Visitor {
         gen("popq", "%rdx");
         stackSize -= 8;
         gen("cmpq", "%rdx", "0(%rax)");
-        String arrayIndexOutOfBoundsLabel = "";
+        String arrayIndexOutOfBoundsLabel;
         if (!labels.containsKey("arrayIndexOutOfBounds")) {
             labels.put("arrayIndexOutOfBounds", 0);
         }
@@ -440,7 +438,7 @@ public class CodeGenVisitor implements Visitor {
         gen("cmpq", 0, "%rdx");
         gen("jl", arrayIndexOutOfBoundsLabel);
         gen("movq", "8(%rax,%rdx,8)", "%rax");
-        String doneLabel = "";
+        String doneLabel;
         if (!labels.containsKey("done")) {
             labels.put("done", 0);
         }
@@ -453,7 +451,7 @@ public class CodeGenVisitor implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "mjerror");
+        gen("call", "_mjerror");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
@@ -531,24 +529,25 @@ public class CodeGenVisitor implements Visitor {
     public void visit(IdentifierExp n) {
         MethodSymbolTable lst = gst.classTables.get(currClassName).methodTables.get(currMethodName);
         if (lst.vars.containsKey(n.s)) {
-            int offset = lst.vars.get(n.s).offset;
+            int offset = lst.offsets.get(n.s);
             gen("movq", "-" + (8+8*offset) + "(%rbp)", "%rax");
             return;
         }else if(lst.params.containsKey(n.s)){
-            int offset = lst.params.get(n.s).offset;
+            System.out.println(n.s);
+            int offset = lst.offsets.get(n.s);
             gen("movq", (16 + 8*offset) + "(%rbp)", "%rax");
             return;
         }
         ClassSymbolTable cst = gst.classTables.get(currClassName);
         if (cst.fields.containsKey(n.s)) {
-            int offset = cst.fields.get(n.s).offset;
+            int offset = cst.fieldOffsets.get(n.s);
             gen("movq",  (8 + 8*offset) + "(%rdi)", "%rax");
             return;
         }
         ClassType ct = gst.classTypes.get(currClassName);
         while (ct.superType != null) {
             if (gst.classTables.get(ct.superType).fields.containsKey(n.s)) {
-                int offset = gst.classTables.get(ct.superType).fields.get(n.s).offset;
+                int offset = gst.classTables.get(ct.superType).fieldOffsets.get(n.s);
                 gen("movq",  (8 + 8*offset) + "(%rdi)", "%rax");
                 return;
             }
@@ -574,7 +573,7 @@ public class CodeGenVisitor implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "mjcalloc");
+        gen("call", "_mjcalloc");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
@@ -598,7 +597,7 @@ public class CodeGenVisitor implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "mjcalloc");
+        gen("call", "_mjcalloc");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
@@ -621,7 +620,7 @@ public class CodeGenVisitor implements Visitor {
     public void visit(Not n) {
         n.e.accept(this);
         gen("cmpq", 1, "%rax");
-        String nf = "";
+        String nf;
         if (!labels.containsKey("setNotFalse")) {
             labels.put("setNotFalse", 0);
         }
@@ -629,7 +628,7 @@ public class CodeGenVisitor implements Visitor {
         nf = "setNotFalse" + labels.get("setNotFalse");
         gen("je", nf);
         gen("movq", 1, "%rax");
-        String doneLabel = "";
+        String doneLabel;
         if (!labels.containsKey("done")) {
             labels.put("done", 0);
         }
@@ -648,14 +647,14 @@ public class CodeGenVisitor implements Visitor {
     }
 
     private void gen(String instruction, String i1, String i2) {
-        sb.append("\t" + instruction + " " + i1 + "," + i2).append("\n");
+        sb.append("\t").append(instruction).append(" ").append(i1).append(",").append(i2).append("\n");
     }
 
     private void gen(String instruction, int n, String i) {
-        sb.append("\t" + instruction + " $" + n + "," + i).append("\n");
+        sb.append("\t").append(instruction).append(" $").append(n).append(",").append(i).append("\n");
     }
 
     private void gen(String instruction, String i) {
-        sb.append("\t" + instruction + " " + i).append("\n");
+        sb.append("\t").append(instruction).append(" ").append(i).append("\n");
     }
 }

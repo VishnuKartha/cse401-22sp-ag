@@ -8,6 +8,7 @@ import java.util.HashMap;
 public class ClassSymbolTable {
     public HashMap<String, MiniJavaType> fields;
     public HashMap<String, MethodType> methods;
+    public HashMap<String, Integer> fieldOffsets;
     public HashMap<String, MethodSymbolTable> methodTables;
     public GlobalSymbolTable top;
 
@@ -15,6 +16,7 @@ public class ClassSymbolTable {
         fields = new HashMap<>();
         methods = new HashMap<>();
         methodTables = new HashMap<>();
+        fieldOffsets = new HashMap<>();
         top = parent;
     }
 
