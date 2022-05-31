@@ -182,7 +182,6 @@ public class CodeGenCopy implements Visitor {
         currMethodName = n.i.s;
         gen(currClassName + "$" + currMethodName + ":");
         gen("pushq", "%rbp");
-        stackSize += 8;
         gen("movq", "%rsp", "%rbp");
         if (n.vl.size() > 0) {
             gen("subq", 8 * n.vl.size(), "%rsp");
@@ -193,7 +192,6 @@ public class CodeGenCopy implements Visitor {
         n.e.accept(this);
         gen("movq", "%rbp", "%rsp");
         gen("popq", "%rbp");
-        stackSize -= 8;
         gen("ret", "");
         currMethodName = "";
     }
@@ -457,6 +455,7 @@ public class CodeGenCopy implements Visitor {
         stackSize += 8;
         n.e1.accept(this);
         gen("popq", "%rdx");
+        stackSize -= 8;
         gen("cmpq", "%rdx", "0(%rax)");
         String arrayIndexOutOfBoundsLabel = "";
         if (!labels.containsKey("arrayIndexOutOfBounds")) {

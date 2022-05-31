@@ -24,6 +24,8 @@ _asm_main:
 	call _put
 	popq %rdx
 	popq %rdi
+	movq $0,%rdi
+	call _put
 	movq %rbp,%rsp
 	popq %rbp
 	ret 
@@ -37,9 +39,7 @@ One$test:
 	addq $1,%rax
 	imulq $8,%rax
 	movq %rax,%rdi
-	pushq %rax
 	call _mjcalloc
-	popq %rdx
 	popq %rdx
 	popq %rdi
 	movq %rdx,0(%rax)
@@ -56,9 +56,7 @@ One$test:
 	movq %rax,8(%rcx,%rdx,8)
 	jmp done1
 arrayIndexOutOfBounds1:
-	pushq %rax
 	call _mjerror
-	popq %rdx
 done1:
 	movq $0,%rax
 	pushq %rax
