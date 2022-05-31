@@ -8,7 +8,6 @@ class One {
     public int test(){
         int[] a;
         a = new int[5];
-        a[0] = 1;
         return 6;
     }
 }

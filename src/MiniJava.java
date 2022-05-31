@@ -48,16 +48,18 @@ public class MiniJava {
                 if(error){
                     System.exit(1);
                 }
-                CodeGenVisitor cgv = new CodeGenVisitor(gst);
+                /*CodeGenVisitor cgv = new CodeGenVisitor(gst);
                 program.accept(cgv);
+                */
+                CodeGenCopy cg = new CodeGenCopy(gst);
+                program.accept(cg);
                 File f = new File("./src/runtime/codegen.s");
                 if(!f.exists()){
                     f.createNewFile();
                 }
                 BufferedWriter bw = new BufferedWriter(new FileWriter(f));
-                bw.write(cgv.getCodeGen());
+                bw.write(cg.codeGen());
                 bw.close();
-                System.out.print(cgv.getCodeGen());
                 System.exit(0);
 
 
