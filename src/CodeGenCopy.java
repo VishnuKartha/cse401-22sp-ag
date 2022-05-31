@@ -107,7 +107,7 @@ public class CodeGenCopy implements Visitor {
         }
         vt.append(n.i.s + "$$: .quad 0\n");
         for (int i = 0; i < n.ml.size(); i++) {
-            vt.append("\t .quad " + currClassName + "$" + n.ml.get(i).i.s).append("\n");
+            vt.append("\t\t.quad " + currClassName + "$" + n.ml.get(i).i.s).append("\n");
         }
         currClassName = "";
     }
@@ -117,8 +117,7 @@ public class CodeGenCopy implements Visitor {
         for (int i = 0;i < n.ml.size(); i++) {
             n.ml.get(i).accept(this);
         }
-        gen("\t.data");
-        gen(n.i.s + "$$: .quad " + n.j.s + "$$");
+        vt.append(n.i.s + "$$: .quad " + n.j.s + "$$").append("\n");
         ClassType ct = gst.classTypes.get(n.i.s);
         HashMap<Integer, String> methodOffsets = new HashMap<>();
 
@@ -127,7 +126,7 @@ public class CodeGenCopy implements Visitor {
             for(String m : cst.methods.keySet()){
                 int offset = cst.methods.get(m).offset;
                 if(!methodOffsets.containsKey(offset)){
-                    methodOffsets.put(offset, "\t\t.quad " + ct.type + "$" + m + "\n");
+                    methodOffsets.put(offset, "\t\t.quad " + ct.type + "$" + m);
                 }
             }
             ct = gst.classTypes.get(ct.superType);
