@@ -616,10 +616,10 @@ public class CodeGenCopy implements Visitor {
 
     public void visit(NewObject n) {
         ClassType ct = gst.classTypes.get(n.i.s);
-        int num_fields = getNumFields(ct.type);
+        int vars = getNumFields(ct.type);
         gen("pushq", "%rdi");
         stackSize += 8;
-        gen("movq", 8 + 8 * num_fields, "%rdi");
+        gen("movq", 8 + 8 * vars, "%rdi");
         if (stackSize % 16 != 0) {
             gen("pushq", "%rax");
             stackSize += 8;

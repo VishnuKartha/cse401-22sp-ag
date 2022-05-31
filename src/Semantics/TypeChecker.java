@@ -253,7 +253,7 @@ public class TypeChecker implements Visitor {
             typeError = true;
             return;
         }
-        n.type = new PrimitiveType(PrimitiveType.INT);
+        n.type = new PrimitiveType(PrimitiveType.BOOLEAN);
     }
 
     @Override
