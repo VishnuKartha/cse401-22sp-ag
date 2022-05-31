@@ -48,22 +48,18 @@ public class MiniJava {
                 if(error){
                     System.exit(1);
                 }
-                /*CodeGenVisitor cgv = new CodeGenVisitor(gst);
-                program.accept(cgv);
-                */
                 CodeGenVisitor cg = new CodeGenVisitor(gst);
                 program.accept(cg);
-                File f = new File("./src/runtime/codegen.s");
+                /*File f = new File("./src/runtime/codegen.s");
                 if(!f.exists()){
                     f.createNewFile();
                 }
                 BufferedWriter bw = new BufferedWriter(new FileWriter(f));
                 bw.write(cg.codeGen());
                 bw.close();
+                */
                 System.out.println(cg.codeGen());
                 System.exit(0);
-
-
             } catch (Exception e) {
                 System.err.println("Unexpected error: ");
                 e.printStackTrace();
@@ -90,7 +86,7 @@ public class MiniJava {
                 // yuck: some kind of error in the compiler implementation
                 // that we're not expecting (a bug!)
                 System.err.println("Unexpected internal compiler error: " +
-                        e.toString());
+                        e);
                 // print out a stack dump
                 e.printStackTrace();
                 System.exit(1);

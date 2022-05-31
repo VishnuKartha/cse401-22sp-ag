@@ -6,7 +6,13 @@ class Factorial{
 
 class One {
     public int test() {
-        return 0;
+        int[] a;
+        int b;
+        b = 2;
+        b = b - 3;
+        a = new int[5];
+        a[b] = 3;
+        return a[0];
     }
 }
 

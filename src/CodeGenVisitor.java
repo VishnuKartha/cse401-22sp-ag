@@ -12,13 +12,13 @@ import java.util.Map;
 
 public class CodeGenVisitor implements Visitor {
 
-    private String currClassName;
+    private String classScope;
 
-    private String currMethodName;
+    private String methodScope;
 
     private final GlobalSymbolTable gst;
 
-    private int stackSize;
+    private int stackSpace;
 
     private boolean aligned;
 
@@ -30,7 +30,7 @@ public class CodeGenVisitor implements Visitor {
 
     public CodeGenVisitor(GlobalSymbolTable gst) {
         this.gst = gst;
-        stackSize = 0;
+        stackSpace = 0;
         aligned = false;
         labels = new HashMap<>();
         sb = new StringBuilder();
@@ -52,7 +52,7 @@ public class CodeGenVisitor implements Visitor {
             }
         }
         gen("\t.text");
-        gen("\t.globl _asm_main");
+        gen("\t.globl asm_main");
         n.m.accept(this);
         for (int i = 0; i < n.cl.size(); i++) {
             n.cl.get(i).accept(this);
@@ -60,30 +60,38 @@ public class CodeGenVisitor implements Visitor {
     }
 
     public void visit(MainClass n) {
-        gen("_asm_main:");
-        gen("pushq", "%rbp");
-        gen("movq", "%rsp", "%rbp");
+        gen("asm_main:");
+        prologue();
         n.s.accept(this);
-        gen("movq", "%rbp", "%rsp");
-        gen("popq", "%rbp");
-        gen("ret", "");
+        epilogue();
         vt.append(n.i1.s).append("$$: .quad 0\n");
     }
 
+    private void prologue(){
+        gen("pushq", "%rbp");
+        gen("movq", "%rsp", "%rbp");
+    }
+
+    private void epilogue(){
+        gen("movq", "%rbp", "%rsp");
+        gen("popq", "%rbp");
+        gen("ret", "");
+    }
+
     public void visit(ClassDeclSimple n) {
-        currClassName = n.i.s;
+        classScope = n.i.s;
         for (int i = 0; i < n.ml.size(); i++) {
             n.ml.get(i).accept(this);
         }
         vt.append(n.i.s).append("$$: .quad 0\n");
         for (int i = 0; i < n.ml.size(); i++) {
-            vt.append("\t\t.quad ").append(currClassName).append("$").append(n.ml.get(i).i.s).append("\n");
+            vt.append("\t\t.quad ").append(classScope).append("$").append(n.ml.get(i).i.s).append("\n");
         }
-        currClassName = "";
+        classScope = "";
     }
 
     public void visit(ClassDeclExtends n) {
-        currClassName = n.i.s;
+        classScope = n.i.s;
         for (int i = 0;i < n.ml.size(); i++) {
             n.ml.get(i).accept(this);
         }
@@ -112,7 +120,7 @@ public class CodeGenVisitor implements Visitor {
         for (int sortedOffset : sortedOffsets) {
             vt.append(methodOffsets.get(sortedOffset)).append("\n");
         }
-        currClassName = "";
+        classScope = "";
     }
 
     private void extendedOffsets(String b, int fo, int mo){
@@ -148,23 +156,20 @@ public class CodeGenVisitor implements Visitor {
     }
 
     public void visit(MethodDecl n) {
-        currMethodName = n.i.s;
-        gen(currClassName + "$" + currMethodName + ":");
-        gen("pushq", "%rbp");
-        gen("movq", "%rsp", "%rbp");
+        methodScope = n.i.s;
+        gen(classScope + "$" + methodScope + ":");
+        prologue();
         if (n.vl.size() > 0) {
             gen("subq", 8 * n.vl.size(), "%rsp");
+            stackSpace += 8 * n.vl.size();
         }
-        stackSize += 8*n.vl.size();
         for (int i = 0; i < n.sl.size(); i++) {
             n.sl.get(i).accept(this);
         }
+        stackSpace -= (8 * n.vl.size());
         n.e.accept(this);
-        gen("movq", "%rbp", "%rsp");
-        stackSize -= 8*n.vl.size();
-        gen("popq", "%rbp");
-        gen("ret", "");
-        currMethodName = "";
+        epilogue();
+        methodScope = "";
     }
 
     public void visit(Formal n) {}
@@ -183,89 +188,73 @@ public class CodeGenVisitor implements Visitor {
         n.e.accept(this);
         gen("cmpq", 1, "%rax");
         String elseLabel;
-        if (!labels.containsKey("else")) {
-            labels.put("else", 0);
-        }
-        labels.put("else", labels.get("else") + 1);
+        labels.put("else", labels.getOrDefault("else", 0) + 1);
         elseLabel = "else" + labels.get("else");
         gen("jne", elseLabel);
         n.s1.accept(this);
-        String doneLabel;
-        if (!labels.containsKey("done")) {
-            labels.put("done", 0);
-        }
-        labels.put("done", labels.get("done") + 1);
-        doneLabel = "done" + labels.get("done");
-        gen("jmp", doneLabel);
+        String endLabel;
+        labels.put("end", labels.getOrDefault("end",0) + 1);
+        endLabel = "end" + labels.get("end");
+        gen("jmp", endLabel);
         gen(elseLabel + ":");
         n.s2.accept(this);
-        gen(doneLabel + ":");
+        gen(endLabel + ":");
     }
     public void visit(While n) {
         String whileLabel;
-        if (!labels.containsKey("while")) {
-            labels.put("while", 0);
-        }
-        labels.put("while", labels.get("while") + 1);
+        labels.put("while", labels.getOrDefault("while",0) + 1);
         whileLabel = "while" + labels.get("while");
         gen(whileLabel + ":");
         n.e.accept(this);
         gen("cmpq", 1, "%rax");
-        String doneLabel;
-        if (!labels.containsKey("done")) {
-            labels.put("done", 0);
-        }
-        labels.put("done", labels.get("done") + 1);
-        doneLabel = "done" + labels.get("done");
-        gen("jne", doneLabel);
+        String endLabel;
+        labels.put("end", labels.getOrDefault("end",0)+1);
+        endLabel = "end" + labels.get("end");
+        gen("jne", endLabel);
         n.s.accept(this);
         gen("jmp", whileLabel);
-        gen(doneLabel + ":");
+        gen(endLabel + ":");
     }
 
     public void visit(Print n) {
         n.e.accept(this);
         gen("pushq", "%rdi");
-        stackSize += 8;
+        stackSpace += 8;
         gen("movq", "%rax", "%rdi");
-        if (stackSize % 16 != 0) {
+        if (stackSpace % 16 != 0) {
             gen("pushq", "%rax");
-            stackSize += 8;
+            stackSpace += 8;
             aligned = true;
         }
-        gen("call", "_put");
+        gen("call", "put");
         if (aligned) {
             gen("popq", "%rdx");
-            stackSize -= 8;
+            stackSpace -= 8;
             aligned = false;
         }
         gen("popq", "%rdi");
-        stackSize -= 8;
+        stackSpace -= 8;
     }
 
     public void visit(Assign n) {
         n.e.accept(this);
-        MethodSymbolTable lst = gst.classTables.get(currClassName).methodTables.get(currMethodName);
-        if (lst.vars.containsKey(n.i.s)) {
+        MethodSymbolTable lst = gst.classTables.get(classScope).methodTables.get(methodScope);
+        if (lst.vars.containsKey(n.i.s)) { // Check for local var
             int offset = lst.offsets.get(n.i.s);
             gen("movq", "%rax", "-" + (8 + 8*offset) + "(%rbp)");
             return;
-        }else if(lst.params.containsKey(n.i.s)){
+        }else if(lst.params.containsKey(n.i.s)){ // Check for method param
             int offset = lst.offsets.get(n.i.s);
             gen("movq", "%rax", (16 + 8*offset) + "(%rbp)");
             return;
         }
-        ClassSymbolTable cst = gst.classTables.get(currClassName);
-        if (cst.fields.containsKey(n.i.s)) {
-            int offset = cst.fieldOffsets.get(n.i.s);
-            gen("movq", "%rax", "-" + (8 + 8*offset) + "(%rdi)");
-            return;
-        }
-        ClassType ct = gst.classTypes.get(currClassName);
-        while (ct.superType != null) {
-            if (gst.classTables.get(ct.superType).fields.containsKey(n.i.s)) {
-                int offset = gst.classTables.get(ct.superType).fieldOffsets.get(n.i.s);
-                gen("movq", "%rax", "-" + (8 + 8*offset) + "(%rdi)");
+
+        // Check for class fields
+        ClassType ct = gst.classTypes.get(classScope);
+        while (ct.type != null) {
+            if (gst.classTables.get(ct.type).fields.containsKey(n.i.s)) {
+                int offset = gst.classTables.get(ct.type).fieldOffsets.get(n.i.s);
+                gen("movq", "%rax", (8 + 8*offset) + "(%rdi)");
                 return;
             }
             ct = gst.classTypes.get(ct.superType);
@@ -275,189 +264,142 @@ public class CodeGenVisitor implements Visitor {
     public void visit(ArrayAssign n) {
         n.e1.accept(this);
         gen("pushq", "%rax");
-        stackSize += 8;
+        stackSpace += 8;
         n.e2.accept(this);
         gen("popq", "%rdx");
-        stackSize -= 8;
-        MethodSymbolTable lst = gst.classTables.get(currClassName).methodTables.get(currMethodName);
-        if (lst.vars.containsKey(n.i.s)) {
+        stackSpace -= 8;
+        MethodSymbolTable lst = gst.classTables.get(classScope).methodTables.get(methodScope);
+        if (lst.vars.containsKey(n.i.s)) { // Check for local var
             int offset = lst.offsets.get(n.i.s);
             gen("movq", "-" + (8 + 8*offset) + "(%rbp)", "%rcx");
-        }else if(lst.params.containsKey(n.i.s)){
+        }else if(lst.params.containsKey(n.i.s)){ // Check for method param
             int offset = lst.offsets.get(n.i.s);
             gen("movq", (16 + 8*offset) + "(%rbp)", "%rcx");
         }else {
-            ClassSymbolTable cst = gst.classTables.get(currClassName);
-            if (cst.fields.containsKey(n.i.s)) {
-                int offset = cst.fieldOffsets.get(n.i.s);
-                gen("movq",  "-" + (8 + 8*offset) + "(%rdi)", "%rcx");
-            } else {
-                ClassType ct = gst.classTypes.get(currClassName);
-                while (ct.superType != null) {
-                    if (gst.classTables.get(ct.superType).fields.containsKey(n.i.s)) {
-                        int offset = gst.classTables.get(ct.superType).fieldOffsets.get(n.i.s);
-                        gen("movq", "-" + (8 + 8*offset) + "(%rdi)", "%rcx");
-                        break;
-                    }
-                    ct = gst.classTypes.get(ct.superType);
+            // Checl for class fields
+            ClassType ct = gst.classTypes.get(classScope);
+            while (ct.type != null) {
+                if (gst.classTables.get(ct.type).fields.containsKey(n.i.s)) {
+                    int offset = gst.classTables.get(ct.type).fieldOffsets.get(n.i.s);
+                    gen("movq", (8 + 8*offset) + "(%rdi)", "%rcx");
+                    break;
                 }
+                ct = gst.classTypes.get(ct.superType);
             }
+
         }
         gen("cmpq", "%rdx", "0(%rcx)");
-        String arrayIndexOutOfBoundsLabel;
-        if (!labels.containsKey("arrayIndexOutOfBounds")) {
-            labels.put("arrayIndexOutOfBounds", 0);
-        }
-        labels.put("arrayIndexOutOfBounds", labels.get("arrayIndexOutOfBounds") + 1);
-        arrayIndexOutOfBoundsLabel = "arrayIndexOutOfBounds" + labels.get("arrayIndexOutOfBounds");
-        gen("jng", arrayIndexOutOfBoundsLabel);
+        labels.put("indexOutOfBoundsLabel", labels.getOrDefault("indexOutOfBoundsLabel", 0) + 1);
+        String indexOutOfBoundsLabel = "indexOutOfBoundsLabel" + labels.get("indexOutOfBoundsLabel");
+        gen("jng", indexOutOfBoundsLabel);
         gen("cmpq", 0, "%rdx");
-        gen("jl", arrayIndexOutOfBoundsLabel);
+        gen("jl", indexOutOfBoundsLabel);
         gen("movq", "%rax", "8(%rcx,%rdx,8)");
-        String doneLabel;
-        if (!labels.containsKey("done")) {
-            labels.put("done", 0);
-        }
-        labels.put("done", labels.get("done") + 1);
-        doneLabel = "done" + labels.get("done");
-        gen("jmp", doneLabel);
-        gen(arrayIndexOutOfBoundsLabel + ":");
-        if (stackSize % 16 != 0) {
+        labels.put("end", labels.get("end") + 1);
+        indexOutofBoundsGen(indexOutOfBoundsLabel);
+    }
+
+    private void indexOutofBoundsGen(String indexOutOfBoundsLabel) {
+        String endLabel = "end" + labels.get("end");
+        gen("jmp", endLabel);
+        gen(indexOutOfBoundsLabel + ":");
+        if (stackSpace % 16 != 0) {
             gen("pushq", "%rax");
-            stackSize += 8;
+            stackSpace += 8;
             aligned = true;
         }
-        gen("call", "_mjerror");
+        gen("call", "mjerror");
         if (aligned) {
             gen("popq", "%rdx");
-            stackSize -= 8;
+            stackSpace -= 8;
             aligned = false;
         }
-        gen(doneLabel + ":");
+        gen(endLabel + ":");
     }
 
     public void visit(And n) {
         n.e1.accept(this);
         gen("cmpq", 1, "%rax");
-        String setAndFalseLabel;
-        if (!labels.containsKey("setAndFalse")) {
-            labels.put("setAndFalse", 0);
-        }
-        labels.put("setAndFalse", labels.get("setAndFalse") + 1);
-        setAndFalseLabel = "setAndFalse" + labels.get("setAndFalse");
-        gen("jne", setAndFalseLabel);
+        labels.put("andFalse", labels.getOrDefault("andFalse", 0) + 1 );
+        String andFalseLabel = "andFalse" + labels.get("andFalse");
+        gen("jne", andFalseLabel);
         n.e2.accept(this);
         gen("cmpq", 1, "%rax");
-        gen("jne", setAndFalseLabel);
+        gen("jne", andFalseLabel);
+        endLabelGen(andFalseLabel);
+    }
+
+    private void endLabelGen(String andFalseLabel) {
         gen("movq", 1, "%rax");
-        String doneLabel;
-        if (!labels.containsKey("done")) {
-            labels.put("done", 0);
-        }
-        labels.put("done", labels.get("done") + 1);
-        doneLabel = "done" + labels.get("done");
-        gen("jmp", doneLabel);
-        gen(setAndFalseLabel + ":");
+        labels.put("end", labels.getOrDefault("end", 0) + 1);
+        String endLabel = "end" + labels.get("end");
+        gen("jmp", endLabel);
+        gen(andFalseLabel + ":");
         gen("movq", 0, "%rax");
-        gen(doneLabel + ":");
+        gen(endLabel + ":");
     }
 
     public void visit(LessThan n) {
         n.e1.accept(this);
         gen("pushq", "%rax");
-        stackSize += 8;
+        stackSpace += 8;
         n.e2.accept(this);
         gen("popq", "%rdx");
-        stackSize -= 8;
+        stackSpace -= 8;
         gen("cmpq", "%rdx", "%rax");
-        String setLessFalseLabel;
-        if (!labels.containsKey("setLessFalse")) {
-            labels.put("setLessFalse", 0);
-        }
-        labels.put("setLessFalse", labels.get("setLessFalse") + 1);
-        setLessFalseLabel = "setLessFalse" + labels.get("setLessFalse");
-        gen("jng", setLessFalseLabel);
-        gen("movq", 1, "%rax");
-        String doneLabel;
-        if (!labels.containsKey("done")) {
-            labels.put("done", 0);
-        }
-        labels.put("done", labels.get("done") + 1);
-        doneLabel = "done" + labels.get("done");
-        gen("jmp", doneLabel);
-        gen(setLessFalseLabel + ":");
-        gen("movq", 0, "%rax");
-        gen(doneLabel + ":");
+
+        labels.put("lessThanFalse", labels.getOrDefault("lessThanFalse", 0) + 1);
+        String ltFalseLabel = "lessThanFalse" + labels.get("lessThanFalse");
+        gen("jng", ltFalseLabel );
+        endLabelGen(ltFalseLabel);
     }
 
     public void visit(Plus n) {
         n.e1.accept(this);
         gen("pushq", "%rax");
-        stackSize += 8;
+        stackSpace += 8;
         n.e2.accept(this);
         gen("popq", "%rdx");
-        stackSize -= 8;
+        stackSpace -= 8;
         gen("addq", "%rdx", "%rax");
     }
 
     public void visit(Minus n) {
         n.e2.accept(this);
         gen("pushq", "%rax");
-        stackSize += 8;
+        stackSpace += 8;
         n.e1.accept(this);
         gen("popq", "%rdx");
-        stackSize -= 8;
+        stackSpace -= 8;
         gen("subq", "%rdx", "%rax");
     }
 
     public void visit(Times n) {
         n.e1.accept(this);
         gen("pushq", "%rax");
-        stackSize += 8;
+        stackSpace += 8;
         n.e2.accept(this);
         gen("popq", "%rdx");
-        stackSize -= 8;
+        stackSpace -= 8;
         gen("imulq", "%rdx", "%rax");
     }
 
     public void visit(ArrayLookup n) {
         n.e2.accept(this);
         gen("pushq", "%rax");
-        stackSize += 8;
+        stackSpace += 8;
         n.e1.accept(this);
         gen("popq", "%rdx");
-        stackSize -= 8;
+        stackSpace -= 8;
         gen("cmpq", "%rdx", "0(%rax)");
-        String arrayIndexOutOfBoundsLabel;
-        if (!labels.containsKey("arrayIndexOutOfBounds")) {
-            labels.put("arrayIndexOutOfBounds", 0);
-        }
-        labels.put("arrayIndexOutOfBounds", labels.get("arrayIndexOutOfBounds") + 1);
-        arrayIndexOutOfBoundsLabel = "arrayIndexOutOfBounds" + labels.get("arrayIndexOutOfBounds");
-        gen("jng", arrayIndexOutOfBoundsLabel);
+        labels.put("arrayIndexOutOfBounds", labels.getOrDefault("arrayIndexOutOfBounds", 0) + 1);
+        String indexOutOfBoundsLabel = "arrayIndexOutOfBounds" + labels.get("arrayIndexOutOfBounds");
+        gen("jng", indexOutOfBoundsLabel);
         gen("cmpq", 0, "%rdx");
-        gen("jl", arrayIndexOutOfBoundsLabel);
+        gen("jl", indexOutOfBoundsLabel);
         gen("movq", "8(%rax,%rdx,8)", "%rax");
-        String doneLabel;
-        if (!labels.containsKey("done")) {
-            labels.put("done", 0);
-        }
-        labels.put("done", labels.get("done") + 1);
-        doneLabel = "done" + labels.get("done");
-        gen("jmp", doneLabel);
-        gen(arrayIndexOutOfBoundsLabel + ":");
-        if (stackSize % 16 != 0) {
-            gen("pushq", "%rax");
-            stackSize += 8;
-            aligned = true;
-        }
-        gen("call", "_mjerror");
-        if (aligned) {
-            gen("popq", "%rdx");
-            stackSize -= 8;
-            aligned = false;
-        }
-        gen(doneLabel + ":");
+        labels.put("end", labels.getOrDefault("end", 0) + 1);
+        indexOutofBoundsGen(indexOutOfBoundsLabel);
     }
     public void visit(ArrayLength n) {
         n.e.accept(this);
@@ -466,52 +408,50 @@ public class CodeGenVisitor implements Visitor {
 
     public void visit(Call n) {
         gen("pushq", "%rdi");
-        stackSize += 8;
+        stackSpace += 8;
+        // Put this is %rbx
         gen("movq", "%rdi", "%rbx");
         n.e.accept(this);
         gen("movq", "%rax", "%rdi");
-        if ((stackSize + 8 * n.el.size()) % 16 != 0) {
+        if ((stackSpace + 8 * n.el.size()) % 16 != 0) {
             gen("pushq", "%rax");
-            stackSize += 8;
+            stackSpace += 8;
             aligned = true;
         }
         for (int i = n.el.size() - 1; i >= 0; i--) {
             n.el.get(i).accept(this);
+            // This in %rbx
             if (n.el.get(i) instanceof This) {
                 gen("pushq", "%rbx");
             } else {
                 gen("pushq", "%rax");
             }
-            stackSize += 8;
+            stackSpace += 8;
         }
         gen("movq", "(%rdi)", "%rax");
         ClassType ct = (ClassType) n.e.type;
-        String className = ct.type;
         int offset = 0;
-        if (gst.classTables.get(className).methods.containsKey(n.i.s)) {
-            offset = gst.classTables.get(className).methods.get(n.i.s).offset;
-        } else {
-            while (ct.superType != null) {
-                if (gst.classTables.get(ct.superType).methods.containsKey(n.i.s)) {
-                    offset = gst.classTables.get(ct.superType).methods.get(n.i.s).offset;
-                    break;
-                }
-                ct = gst.classTypes.get(ct.superType);
+        // Find method offset
+        while (ct.type != null) {
+            if (gst.classTables.get(ct.type).methods.containsKey(n.i.s)) {
+                offset = gst.classTables.get(ct.type).methods.get(n.i.s).offset;
+                break;
             }
+            ct = gst.classTypes.get(ct.superType);
         }
         gen("addq", (8 + 8*offset), "%rax");
         gen("call", "*(%rax)");
         for (int i = 0; i < n.el.size(); i++) {
             gen("popq", "%rdx");
-            stackSize -= 8;
+            stackSpace -= 8;
         }
         if (aligned) {
             gen("popq", "%rdx");
-            stackSize -= 8;
+            stackSpace -= 8;
             aligned = false;
         }
         gen("popq", "%rdi");
-        stackSize -= 8;
+        stackSpace -= 8;
     }
 
     public void visit(IntegerLiteral n) {
@@ -527,27 +467,21 @@ public class CodeGenVisitor implements Visitor {
     }
 
     public void visit(IdentifierExp n) {
-        MethodSymbolTable lst = gst.classTables.get(currClassName).methodTables.get(currMethodName);
-        if (lst.vars.containsKey(n.s)) {
+        MethodSymbolTable lst = gst.classTables.get(classScope).methodTables.get(methodScope);
+        if (lst.vars.containsKey(n.s)) { // Check for local var
             int offset = lst.offsets.get(n.s);
             gen("movq", "-" + (8+8*offset) + "(%rbp)", "%rax");
             return;
-        }else if(lst.params.containsKey(n.s)){
-            System.out.println(n.s);
+        }else if(lst.params.containsKey(n.s)){ // Check for method param
             int offset = lst.offsets.get(n.s);
             gen("movq", (16 + 8*offset) + "(%rbp)", "%rax");
             return;
         }
-        ClassSymbolTable cst = gst.classTables.get(currClassName);
-        if (cst.fields.containsKey(n.s)) {
-            int offset = cst.fieldOffsets.get(n.s);
-            gen("movq",  (8 + 8*offset) + "(%rdi)", "%rax");
-            return;
-        }
-        ClassType ct = gst.classTypes.get(currClassName);
-        while (ct.superType != null) {
-            if (gst.classTables.get(ct.superType).fields.containsKey(n.s)) {
-                int offset = gst.classTables.get(ct.superType).fieldOffsets.get(n.s);
+        // Must be class field
+        ClassType ct = gst.classTypes.get(classScope);
+        while (ct.type != null) {
+            if (gst.classTables.get(ct.type).fields.containsKey(n.s)) {
+                int offset = gst.classTables.get(ct.type).fieldOffsets.get(n.s);
                 gen("movq",  (8 + 8*offset) + "(%rdi)", "%rax");
                 return;
             }
@@ -556,88 +490,72 @@ public class CodeGenVisitor implements Visitor {
     }
 
     public void visit(This n) {
+        // This always in %rdi
         gen("movq", "%rdi", "%rax");
     }
 
     public void visit(NewArray n) {
         n.e.accept(this);
         gen("pushq", "%rdi");
-        stackSize += 8;
+        stackSpace += 8;
         gen("pushq", "%rax");
-        stackSize += 8;
+        stackSpace += 8;
         gen("addq", 1, "%rax");
         gen("imulq", 8, "%rax");
         gen("movq", "%rax", "%rdi");
-        if (stackSize % 16 != 0) {
-            gen("pushq", "%rax");
-            stackSize += 8;
-            aligned = true;
-        }
-        gen("call", "_mjcalloc");
-        if (aligned) {
-            gen("popq", "%rdx");
-            stackSize -= 8;
-            aligned = false;
-        }
+        // Space needed in %rdi
+        spaceAllocGen();
         gen("popq", "%rdx");
-        stackSize -= 8;
+        stackSpace -= 8;
         gen("popq", "%rdi");
-        stackSize -= 8;
+        stackSpace -= 8;
         gen("movq", "%rdx", "0(%rax)");
     }
 
     public void visit(NewObject n) {
         ClassType ct = gst.classTypes.get(n.i.s);
-        int vars = getNumFields(ct.type);
+        int vars = numFields(ct.type);
         gen("pushq", "%rdi");
-        stackSize += 8;
+        stackSpace += 8;
         gen("movq", 8 + 8 * vars, "%rdi");
-        if (stackSize % 16 != 0) {
-            gen("pushq", "%rax");
-            stackSize += 8;
-            aligned = true;
-        }
-        gen("call", "_mjcalloc");
-        if (aligned) {
-            gen("popq", "%rdx");
-            stackSize -= 8;
-            aligned = false;
-        }
+        // Space needed in %rdi
+        spaceAllocGen();
         gen("popq", "%rdi");
-        stackSize -= 8;
+        stackSpace -= 8;
         gen("leaq", n.i.s + "$$(%rip)", "%rdx");
         gen("movq", "%rdx", "0(%rax)");
     }
 
-    private int getNumFields(String className) {
+    private void spaceAllocGen() {
+        if (stackSpace % 16 != 0) {
+            gen("pushq", "%rax");
+            stackSpace += 8;
+            aligned = true;
+        }
+        gen("call", "mjcalloc");
+        if (aligned) {
+            gen("popq", "%rdx");
+            stackSpace -= 8;
+            aligned = false;
+        }
+    }
+
+    private int numFields(String className) {
         ClassType ct = gst.classTypes.get(className);
         if (ct.superType == null) {
             return gst.classTables.get(className).fields.size();
         }
-        return gst.classTables.get(className).fields.size() + getNumFields(ct.superType);
+        return gst.classTables.get(className).fields.size() + numFields(ct.superType);
     }
 
     public void visit(Not n) {
         n.e.accept(this);
         gen("cmpq", 1, "%rax");
-        String nf;
-        if (!labels.containsKey("setNotFalse")) {
-            labels.put("setNotFalse", 0);
-        }
-        labels.put("setNotFalse", labels.get("setNotFalse") + 1);
-        nf = "setNotFalse" + labels.get("setNotFalse");
+
+        labels.put("notFalse", labels.getOrDefault("notFalse", 0) + 1);
+        String nf = "notFalse" + labels.get("notFalse");
         gen("je", nf);
-        gen("movq", 1, "%rax");
-        String doneLabel;
-        if (!labels.containsKey("done")) {
-            labels.put("done", 0);
-        }
-        labels.put("done", labels.get("done") + 1);
-        doneLabel = "done" + labels.get("done");
-        gen("jmp", doneLabel);
-        gen(nf + ":");
-        gen("movq", 0, "%rax");
-        gen(doneLabel + ":");
+        endLabelGen(nf);
     }
 
     public void visit(Identifier n) {}

@@ -86,7 +86,6 @@ class BBS{
 	number[7] = 9  ; 
 	number[8] = 19 ; 
 	number[9] = 5  ;
-	
 	return 0 ;	
     }
 
