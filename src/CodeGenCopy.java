@@ -53,7 +53,7 @@ public class CodeGenCopy implements Visitor {
             }
         }
         gen("\t.text");
-        gen("\t.globl _asm_main");
+        gen("\t.globl asm_main");
         n.m.accept(this);
         for (int i = 0; i < n.cl.size(); i++) {
             n.cl.get(i).accept(this);
@@ -61,7 +61,7 @@ public class CodeGenCopy implements Visitor {
     }
 
     public void visit(MainClass n) {
-        gen("_asm_main:");
+        gen("asm_main:");
         gen("pushq", "%rbp");
         stackSize += 8;
         gen("movq", "%rsp", "%rbp");
@@ -154,6 +154,7 @@ public class CodeGenCopy implements Visitor {
         currMethodName = n.i.s;
         gen(currClassName + "$" + currMethodName + ":");
         gen("pushq", "%rbp");
+        stackSize += 8;
         gen("movq", "%rsp", "%rbp");
         if (n.vl.size() > 0) {
             gen("subq", 8 * n.vl.size(), "%rsp");
@@ -164,6 +165,7 @@ public class CodeGenCopy implements Visitor {
         n.e.accept(this);
         gen("movq", "%rbp", "%rsp");
         gen("popq", "%rbp");
+        stackSize -= 8;
         gen("ret", "");
         currMethodName = "";
     }
@@ -234,7 +236,7 @@ public class CodeGenCopy implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "_put");
+        gen("call", "put");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
@@ -328,7 +330,7 @@ public class CodeGenCopy implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "_mjerror");
+        gen("call", "mjerror");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
@@ -452,7 +454,7 @@ public class CodeGenCopy implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "_mjerror");
+        gen("call", "mjerror");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
@@ -536,7 +538,6 @@ public class CodeGenCopy implements Visitor {
         }else if(lst.params.containsKey(n.s)){
             int offset = lst.params.get(n.s).offset;
             gen("movq", (16 + 8*offset) + "(%rbp)", "%rax");
-
             return;
         }
         ClassSymbolTable cst = gst.classTables.get(currClassName);
@@ -574,7 +575,7 @@ public class CodeGenCopy implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "_mjcalloc");
+        gen("call", "mjcalloc");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
@@ -598,7 +599,7 @@ public class CodeGenCopy implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        gen("call", "_mjcalloc");
+        gen("call", "mjcalloc");
         if (aligned) {
             gen("popq", "%rdx");
             stackSize -= 8;
