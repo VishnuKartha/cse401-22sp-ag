@@ -296,7 +296,7 @@ public class CodeGenVisitor implements Visitor {
         gen("cmpq", 0, "%rdx");
         gen("jl", indexOutOfBoundsLabel);
         gen("movq", "%rax", "8(%rcx,%rdx,8)");
-        labels.put("end", labels.get("end") + 1);
+        labels.put("end", labels.getOrDefault("end", 0) + 1);
         indexOutofBoundsGen(indexOutOfBoundsLabel);
     }
 

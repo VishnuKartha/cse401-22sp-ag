@@ -32,9 +32,9 @@ void put(int64_t x) {
  *  Return NULL if attempt to allocate memory fails or if num_bytes
  *  is 0.
  */
-int mjerror(size_t num_bytes) {
-  printf("ERROR");
-  return 1;
+void mjerror(size_t num_bytes) {
+  printf("Array Index out of Bounds Error\n");
+  exit(1);
 }
 
 void * mjcalloc(size_t num_bytes) {
