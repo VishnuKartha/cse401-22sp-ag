@@ -2,6 +2,7 @@ import AST.*;
 import AST.Visitor.Visitor;
 import Semantics.SymbolTables.ClassSymbolTable;
 import Semantics.SymbolTables.GlobalSymbolTable;
+import Semantics.SymbolTables.MethodSymbolTable;
 import Types.ClassType;
 import Types.MethodType;
 import Types.MiniJavaType;
@@ -20,6 +21,8 @@ public class CodeGenVisitor implements Visitor {
     private String methodScope;
     private Map<String,Integer> labelsUsed;
     private int stackVariables;
+
+    boolean aligned;
 
 
     public CodeGenVisitor(GlobalSymbolTable gst){
@@ -282,31 +285,58 @@ public class CodeGenVisitor implements Visitor {
         stackVariables++;
         gen("pushq", "%rax"); // index on stack
         n.e2.accept(this); // value in rax
-        gen("popq", "%rcx"); // Index in rcx
+        gen("popq", "%rdx"); // Index in rcx
+        stackVariables--;
         gen("cmpq","0","%rcx");
 
         gen("jl",unsuccessfullBoundsCheck);
         stackVariables--;
-        if(gT.classTables.get(classScope).methodTables.get(methodScope).vars.containsKey(n.i.s)){
+
+        MethodSymbolTable mt =  gT.classTables.get(classScope).methodTables.get(methodScope);
+        if(mt.vars.containsKey(n.i.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).vars.get(n.i.s);
-            gen("movq",  "-" + (8 + 8*id.offset) + "(%rbp)", "%rdx");
-        }else if(gT.classTables.get(classScope).methodTables.get(methodScope).params.containsKey(n.i.s)){
+            gen("movq",  "-" + (8 + 8*id.offset) + "(%rbp)", "%rcx");
+        }else if(mt.params.containsKey(n.i.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).params.get(n.i.s);
-            gen("movq", (16 + 8 * id.offset) + "(%rbp)", "%rdx");
+            gen("movq", (16 + 8 * id.offset) + "(%rbp)", "%rcx");
         }else{
             // Class field
+            ClassSymbolTable ct = gT.classTables.get(classScope);
+            if(ct.fields.containsKey(n.i.s)){
+                int offset = ct.fields.get(n.i.s).offset;
+                gen("movq", (8 + 8*offset) + "(%rdi)", "rcx");
+            }else{
+                ClassType cst = gT.classTypes.get(classScope);
+                while(cst.superType != null){
+                    if(gT.classTables.get(cst.superType).fields.containsKey(n.i.s)){
+                        int offset = gT.classTables.get(cst.superType).fields.get(n.i.s).offset;
+                        gen("movq", (8 + 8*offset) + "(%rdi)", "rcx");
+                        break;
+                    }
+                    cst = gT.classTypes.get(cst.superType);
+                }
+            }
             id = gT.classTables.get(classScope).fields.get(n.i.s);
             gen("movq", "-" + (8 + 8*id.offset) + "(%rdi)", "%rdx");
         }
 
-        gen("cmpq","%rcx","(%rdx)");
+        gen("cmpq","%rdx","0(%rcx)");
         gen("jle",unsuccessfullBoundsCheck);
+        gen("movq","%rax",  "8(%rcx,%rdx,8)" );
         gen("jmp",successfullBoundsCheck);
         gen(unsuccessfullBoundsCheck+":");
+        if(stackVariables %16 != 0){
+            gen("pushq", "%rax");
+            stackVariables++;
+            aligned = true;
+        }
         gen("call","_mjerror");
-
+        if(aligned){
+            gen("popq", "%rdx");
+            stackVariables--;
+            aligned = false;
+        }
         gen(successfullBoundsCheck+":");
-        gen("movq","%rax",  "8(%rdx,%rcx,8)" );
 
         gen(endArrayLookUp+":");
 
@@ -501,29 +531,29 @@ public class CodeGenVisitor implements Visitor {
     public void visit(NewArray n) {
         n.e.accept(this);
         // num elements of array stored in rax
-        gen("pushq", "%rax"); // save the array len
         gen("pushq", "%rdi");
-        stackVariables+=2;
         gen("addq",1, "%rax"); // gets space to hold the length of the array information
         gen("imulq" , 8, "%rax"); // 8 bytes per element
-        System.out.println(stackVariables);
-        boolean padded = false;
+        gen("movq", "%rax", "%rdi");
+        gen("pushq", "%rax"); // save the array len
+        stackVariables+=2;
         if(stackVariables%2 != 0){
             stackVariables++;
             gen("subq", "$8", "%rsp");
-            padded = true;
+            aligned = true;
 
         }
-
-        gen("movq", "%rax", "%rdi");
         gen("call","_mjcalloc"); // address of allocated state stored in %rax
-        if(padded){
-            gen("addq", "$8", "%rsp");
+        if(aligned){
+            gen("popq", "%rdx");
+            stackVariables--;
+            aligned = false;
         }
-        gen("popq", "%rdi");
+
         gen("popq", "%rdx"); // get the array len information into rdx
+        gen("popq", "%rdi");
         stackVariables-=2;
-        gen("movq", "%rdx", "(%rax)"); // store  the length of the array in first 8 bytes of array space
+        gen("movq", "%rdx", "0(%rax)"); // store  the length of the array in first 8 bytes of array space
     }
 
     @Override
