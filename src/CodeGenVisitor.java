@@ -161,6 +161,7 @@ public class CodeGenVisitor implements Visitor {
         }
         n.e.accept(this);
         epilogue();
+        stackVariables = 0;
 
         methodScope = null;
     }
@@ -273,8 +274,8 @@ public class CodeGenVisitor implements Visitor {
 
         MiniJavaType id;
 
-        String successfullBoundsCheck = generateLabel("ArrayLookupSuccessfullBoundsCheck");
-        String unsuccessfullBoundsCheck = generateLabel("ArrayLookupUnsuccessfullBoundsCheck");
+        String successfullBoundsCheck = generateLabel("InBounds");
+        String unsuccessfullBoundsCheck = generateLabel("OutofBounds");
         String endArrayLookUp = generateLabel("endArrayLookUp");
 
         n.e1.accept(this); // index in rax
@@ -501,17 +502,27 @@ public class CodeGenVisitor implements Visitor {
         n.e.accept(this);
         // num elements of array stored in rax
         gen("pushq", "%rax"); // save the array len
-        stackVariables++;
+        gen("pushq", "%rdi");
+        stackVariables+=2;
         gen("addq",1, "%rax"); // gets space to hold the length of the array information
         gen("imulq" , 8, "%rax"); // 8 bytes per element
+        System.out.println(stackVariables);
+        boolean padded = false;
         if(stackVariables%2 != 0){
+            stackVariables++;
             gen("subq", "$8", "%rsp");
+            padded = true;
+
         }
 
         gen("movq", "%rax", "%rdi");
         gen("call","_mjcalloc"); // address of allocated state stored in %rax
+        if(padded){
+            gen("addq", "$8", "%rsp");
+        }
+        gen("popq", "%rdi");
         gen("popq", "%rdx"); // get the array len information into rdx
-        stackVariables--;
+        stackVariables-=2;
         gen("movq", "%rdx", "(%rax)"); // store  the length of the array in first 8 bytes of array space
     }
 
@@ -519,7 +530,9 @@ public class CodeGenVisitor implements Visitor {
     public void visit(NewObject n) {
         int num_vars = gT.classTables.get(n.i.s).fields.size();
         gen("movq",(8 + 8*num_vars),"%rdi");
+
         if(stackVariables%2 != 0){
+            stackVariables++;
             gen("subq", "$8", "%rsp");
         }
         gen("call","_mjcalloc");

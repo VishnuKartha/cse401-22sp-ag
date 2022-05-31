@@ -25,10 +25,14 @@ One$test:
 	subq	$8,%rsp
 	movq	$5,%rax
 	pushq	%rax
+	pushq	%rdi
 	addq	$1,%rax
 	imulq	$8,%rax
+	subq	$8,%rsp
 	movq	%rax,%rdi
 	call	_mjcalloc
+	addq	$8,%rsp
+	popq	%rdi
 	popq	%rdx
 	movq	%rdx,(%rax)
 	movq	%rax,-8(%rbp)
@@ -37,14 +41,14 @@ One$test:
 	movq	$1,%rax
 	popq	%rcx
 	cmpq	0,%rcx
-	jl	ArrayLookupUnsuccessfullBoundsCheck01
+	jl	OutofBounds01
 	movq	-8(%rbp),%rdx
 	cmpq	%rcx,(%rdx)
-	jle	ArrayLookupUnsuccessfullBoundsCheck01
-	jmp	ArrayLookupSuccessfullBoundsCheck01
-ArrayLookupUnsuccessfullBoundsCheck01:
+	jle	OutofBounds01
+	jmp	InBounds01
+OutofBounds01:
 	call	_mjerror
-ArrayLookupSuccessfullBoundsCheck01:
+InBounds01:
 	movq	%rax,8(%rdx,%rcx,8)
 endArrayLookUp01:
 	movq	$3,%rax
