@@ -51,7 +51,7 @@ public class MiniJava {
                 /*CodeGenVisitor cgv = new CodeGenVisitor(gst);
                 program.accept(cgv);
                 */
-                CodeGenCopy cg = new CodeGenCopy(gst);
+                CodeGenVisitor cg = new CodeGenVisitor(gst);
                 program.accept(cg);
                 File f = new File("./src/runtime/codegen.s");
                 if(!f.exists()){
@@ -60,6 +60,7 @@ public class MiniJava {
                 BufferedWriter bw = new BufferedWriter(new FileWriter(f));
                 bw.write(cg.codeGen());
                 bw.close();
+                System.out.println(cg.codeGen());
                 System.exit(0);
 
 
