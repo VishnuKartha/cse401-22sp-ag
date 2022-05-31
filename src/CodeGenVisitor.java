@@ -410,7 +410,7 @@ public class CodeGenVisitor implements Visitor {
         String successfullBoundsCheck = generateLabel("ArrayLookupSuccessfullBoundsCheck");
         String unsuccessfullBoundsCheck = generateLabel("ArrayLookupUnsuccessfullBoundsCheck");
         String endArrayLookUp = generateLabel("endArrayLookUp");
-
+//        A[i]
 
         n.e1.accept(this);
         gen("pushq", "%rax");
@@ -418,13 +418,13 @@ public class CodeGenVisitor implements Visitor {
         n.e2.accept(this); // rax has the index of the array
         gen("popq", "%rdx"); // rdx has the address of array
         stackVariables--;
-        gen("cmpq","0","(%rdx)");
+        gen("cmpq","0","%rax");
         gen("jl",unsuccessfullBoundsCheck);
         gen("cmpq","%rax","(%rdx)");
-        gen("jg",unsuccessfullBoundsCheck);
+        gen("jle",unsuccessfullBoundsCheck);
         gen("jmp",successfullBoundsCheck);
         gen(unsuccessfullBoundsCheck+":");
-        gen("call","_ArrayOutofBoundsError");
+        gen("call","_mjerror");
 
         gen(successfullBoundsCheck+":");
         gen("movq", "8(%rdx,%rax,8)", "%rax");
