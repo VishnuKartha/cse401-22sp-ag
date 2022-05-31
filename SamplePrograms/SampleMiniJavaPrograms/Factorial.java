@@ -8,6 +8,5 @@ class One {
     public int test() {
         return 0;
     }
-
 }
 

@@ -60,42 +60,15 @@ public class CodeGenCopy implements Visitor {
         }
     }
 
-    private void computeClassOffsets(String baseClassName, int fieldsOffset, int methodsOffset) {
-        for (String className : gst.classTypes.keySet()) {
-            ClassType ct = gst.classTypes.get(className);
-            if (ct.superType != null && ct.superType.equals(baseClassName)) {
-                ClassSymbolTable cst = gst.classTables.get(ct.type);
-                for (String field : cst.fields.keySet()) {
-                    cst.fields.get(field).offset = fieldsOffset;
-                    fieldsOffset ++;
-                }
-                for (String methodName : cst.methods.keySet()) {
-                    ClassType currCt = gst.classTypes.get(ct.type);
-                    while (currCt.superType != null) {
-                        currCt = gst.classTypes.get(currCt.superType);
-                        ClassSymbolTable currCst = gst.classTables.get(currCt.type);
-                        if (currCst.methods.containsKey(methodName)) {
-                            cst.methods.get(methodName).offset = currCst.methods.get(methodName).offset;
-                            break;
-                        }
-                    }
-                    if (cst.methods.get(methodName).offset == -1) {
-                        cst.methods.get(methodName).offset = methodsOffset;
-                        methodsOffset ++;
-                    }
-                }
-                computeClassOffsets(ct.type, fieldsOffset, methodsOffset);
-            }
-        }
-    }
-
     public void visit(MainClass n) {
         gen("_asm_main:");
         gen("pushq", "%rbp");
+        stackSize += 8;
         gen("movq", "%rsp", "%rbp");
         n.s.accept(this);
         gen("movq", "%rbp", "%rsp");
         gen("popq", "%rbp");
+        stackSize -= 8;
         gen("ret", "");
         vt.append(n.i1.s + "$$: .quad 0\n");
     }
@@ -503,7 +476,7 @@ public class CodeGenCopy implements Visitor {
             stackSize += 8;
             aligned = true;
         }
-        for (int i = 0; i < n.el.size(); i++) {
+        for (int i = n.el.size() - 1; i >= 0; i--) {
             n.el.get(i).accept(this);
             if (n.el.get(i) instanceof This) {
                 gen("pushq", "%rbx");
@@ -648,13 +621,13 @@ public class CodeGenCopy implements Visitor {
     public void visit(Not n) {
         n.e.accept(this);
         gen("cmpq", 1, "%rax");
-        String setNotFalseLabel = "";
+        String nf = "";
         if (!labels.containsKey("setNotFalse")) {
             labels.put("setNotFalse", 0);
         }
         labels.put("setNotFalse", labels.get("setNotFalse") + 1);
-        setNotFalseLabel = "setNotFalse" + labels.get("setNotFalse");
-        gen("je", setNotFalseLabel);
+        nf = "setNotFalse" + labels.get("setNotFalse");
+        gen("je", nf);
         gen("movq", 1, "%rax");
         String doneLabel = "";
         if (!labels.containsKey("done")) {
@@ -663,7 +636,7 @@ public class CodeGenCopy implements Visitor {
         labels.put("done", labels.get("done") + 1);
         doneLabel = "done" + labels.get("done");
         gen("jmp", doneLabel);
-        gen(setNotFalseLabel + ":");
+        gen(nf + ":");
         gen("movq", 0, "%rax");
         gen(doneLabel + ":");
     }
