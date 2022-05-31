@@ -288,6 +288,7 @@ public class CodeGenVisitor implements Visitor {
             }
 
         }
+        // Compare to size
         gen("cmpq", "%rdx", "0(%rcx)");
         labels.put("indexOutOfBoundsLabel", labels.getOrDefault("indexOutOfBoundsLabel", 0) + 1);
         String indexOutOfBoundsLabel = "indexOutOfBoundsLabel" + labels.get("indexOutOfBoundsLabel");
@@ -391,6 +392,7 @@ public class CodeGenVisitor implements Visitor {
         n.e1.accept(this);
         gen("popq", "%rdx");
         stackSpace -= 8;
+        // Compare to the size of array
         gen("cmpq", "%rdx", "0(%rax)");
         labels.put("arrayIndexOutOfBounds", labels.getOrDefault("arrayIndexOutOfBounds", 0) + 1);
         String indexOutOfBoundsLabel = "arrayIndexOutOfBounds" + labels.get("arrayIndexOutOfBounds");
