@@ -1,21 +1,23 @@
 import AST.*;
 import AST.Visitor.Visitor;
+import Semantics.SymbolTables.ClassSymbolTable;
 import Semantics.SymbolTables.GlobalSymbolTable;
 import Types.ClassType;
 import Types.MethodType;
 import Types.MiniJavaType;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class CodeGenVisitor implements Visitor {
 
     private StringBuilder sb;
-    private StringBuilder vtable;
+    private StringBuilder vt;
     private GlobalSymbolTable gT;
     private String classScope;
     private String methodScope;
-
     private Map<String,Integer> labelsUsed;
     private int stackVariables;
 
@@ -23,14 +25,14 @@ public class CodeGenVisitor implements Visitor {
     public CodeGenVisitor(GlobalSymbolTable gst){
         gT = gst;
         sb = new StringBuilder();
-        vtable= new StringBuilder();
-        vtable.append("\t\t.data\n");
+        vt = new StringBuilder();
+        vt.append("\t\t.data\n");
         this.labelsUsed = new HashMap<>();
         stackVariables = 0;
     }
 
     public String getCodeGen(){
-        return sb.toString() + vtable.toString();
+        return sb.toString() + vt.toString();
     }
 
     @Override
@@ -38,6 +40,12 @@ public class CodeGenVisitor implements Visitor {
         sb.append("\t").append(".text").append("\n");
         sb.append("\t").append(".globl _asm_main").append("\n");
         sb.append("\n");
+        for(String c : gT.classTypes.keySet()){
+            ClassType ct = gT.classTypes.get(c);
+            if(ct.superType == null){
+                extendedOffsets(ct.type, gT.classTables.get(c).fields.size(), gT.classTables.get(c).methods.size());
+            }
+        }
         n.m.accept(this);
         for(int i = 0; i < n.cl.size(); i++){
             n.cl.get(i).accept(this);
@@ -54,8 +62,7 @@ public class CodeGenVisitor implements Visitor {
         n.s.accept(this);
         epilogue();
         sb.append("\n");
-        vtable.append(n.i1.s).append("$$:\t.quad 0\n");
-        vtable.append("\n");
+        vt.append(n.i1.s).append("$$:\t.quad 0\n\n");
     }
 
     @Override
@@ -65,23 +72,76 @@ public class CodeGenVisitor implements Visitor {
             n.ml.get(i).accept(this);
         }
 
-        vtable.append(n.i.s).append("$$:\t.quad 0\n");
+        vt.append(n.i.s).append("$$:\t.quad 0\n");
         for(int i = 0; i < n.ml.size(); i++){
-            vtable.append("\t\t.quad ").append(n.i.s).append("$").append(n.ml.get(i).i.s).append("\n");
+            vt.append("\t\t.quad ").append(n.i.s).append("$").append(n.ml.get(i).i.s).append("\n");
         }
-
         classScope = null;
     }
 
     @Override
     public void visit(ClassDeclExtends n) {
         classScope = n.i.s;
-        vtable.append(n.i.s).append("$$:\t.quad").append(n.j.s).append("$$\n");
+        vt.append(n.i.s).append("$$:\t.quad ").append(n.j.s).append("$$\n");
         for(int i =0; i < n.ml.size(); i++){
             n.ml.get(i).accept(this);
         }
+
+        ClassType ct = gT.classTypes.get(n.i.s);
+        HashMap<Integer, String> methodOffsets = new HashMap<>();
+
+        while(ct != null){
+            ClassSymbolTable cst = gT.classTables.get(ct.type);
+            for(String m : cst.methods.keySet()){
+                int offset = cst.methods.get(m).offset;
+                if(!methodOffsets.containsKey(offset)){
+                    methodOffsets.put(offset, "\t\t.quad " + ct.type + "$" + m + "\n");
+                }
+            }
+            ct = gT.classTypes.get(ct.superType);
+        }
+
+        int[] sortedOffsets = new int[methodOffsets.keySet().size()];
+        int i = 0;
+        for(int x : methodOffsets.keySet()){
+            sortedOffsets[i] = x;
+            i++;
+        }
+        Arrays.sort(sortedOffsets);
+        for (int sortedOffset : sortedOffsets) {
+            vt.append(methodOffsets.get(sortedOffset));
+        }
         classScope = null;
 
+    }
+
+    private void extendedOffsets(String b, int fo, int mo){
+        for(String c : gT.classTypes.keySet()){
+            ClassType cta = gT.classTypes.get(c);
+            if(cta.superType != null && cta.superType.equals(b)){
+                ClassSymbolTable ct = gT.classTables.get(c);
+                for(String f : ct.fields.keySet()){
+                    ct.fields.get(f).offset = fo;
+                    fo++;
+                }
+                for(String m : ct.methods.keySet()){
+                    ClassType ctb = gT.classTypes.get(cta.type);
+                    while(ctb.superType != null){
+                        ctb = gT.classTypes.get(ctb.superType);
+                        ClassSymbolTable csb = gT.classTables.get(ctb.type);
+                        if(csb.methods.containsKey(m)){
+                            ct.methods.get(m).offset = csb.methods.get(m).offset;
+                            break;
+                        }
+                    }
+                    if(ct.methods.get(m).offset == -1){
+                        ct.methods.get(m).offset = mo;
+                        mo++;
+                    }
+                }
+                extendedOffsets(cta.type, fo, mo);
+            }
+        }
     }
 
     @Override
@@ -199,6 +259,7 @@ public class CodeGenVisitor implements Visitor {
             id = gT.classTables.get(classScope).methodTables.get(methodScope).params.get(n.i.s);
             gen("movq", "%rax", (16 + 8 * id.offset) + "(%rbp)");
         }else{
+            // Class field
             id = gT.classTables.get(classScope).fields.get(n.i.s);
             gen("movq", "%rax", (8 + 8 * id.offset) + "(%rdi)");
         }
@@ -209,24 +270,44 @@ public class CodeGenVisitor implements Visitor {
     @Override
     public void visit(ArrayAssign n) {
         // the offset of the variable
+
         MiniJavaType id;
+
+        String successfullBoundsCheck = generateLabel("ArrayLookupSuccessfullBoundsCheck");
+        String unsuccessfullBoundsCheck = generateLabel("ArrayLookupUnsuccessfullBoundsCheck");
+        String endArrayLookUp = generateLabel("endArrayLookUp");
+
+        n.e1.accept(this); // index in rax
+        stackVariables++;
+        gen("pushq", "%rax"); // index on stack
+        n.e2.accept(this); // value in rax
+        gen("popq", "%rcx"); // Index in rcx
+        gen("cmpq","0","%rcx");
+
+        gen("jl",unsuccessfullBoundsCheck);
+        stackVariables--;
         if(gT.classTables.get(classScope).methodTables.get(methodScope).vars.containsKey(n.i.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).vars.get(n.i.s);
+            gen("movq",  "-" + (8 + 8*id.offset) + "(%rbp)", "%rdx");
         }else if(gT.classTables.get(classScope).methodTables.get(methodScope).params.containsKey(n.i.s)){
             id = gT.classTables.get(classScope).methodTables.get(methodScope).params.get(n.i.s);
+            gen("movq", (16 + 8 * id.offset) + "(%rbp)", "%rdx");
         }else{
+            // Class field
             id = gT.classTables.get(classScope).fields.get(n.i.s);
+            gen("movq", "-" + (8 + 8*id.offset) + "(%rdi)", "%rdx");
         }
-        int offset = id.offset;
 
-        String negativeSign = (offset <= 0) ? "" : "-";
-        offset = Math.abs(offset);
+        gen("cmpq","%rcx","(%rdx)");
+        gen("jle",unsuccessfullBoundsCheck);
+        gen("jmp",successfullBoundsCheck);
+        gen(unsuccessfullBoundsCheck+":");
+        gen("call","_mjerror");
 
+        gen(successfullBoundsCheck+":");
+        gen("movq","%rax",  "8(%rdx,%rcx,8)" );
 
-        n.e1.accept(this);
-        gen("pushq","%rax");
-        n.e2.accept(this);
-        gen("popq","%rdx");
+        gen(endArrayLookUp+":");
 
     }
 
@@ -422,10 +503,12 @@ public class CodeGenVisitor implements Visitor {
         gen("pushq", "%rax"); // save the array len
         stackVariables++;
         gen("addq",1, "%rax"); // gets space to hold the length of the array information
-        gen("mulq" , 8, "%rax"); // 8 bytes per element
+        gen("imulq" , 8, "%rax"); // 8 bytes per element
         if(stackVariables%2 != 0){
             gen("subq", "$8", "%rsp");
         }
+
+        gen("movq", "%rax", "%rdi");
         gen("call","_mjcalloc"); // address of allocated state stored in %rax
         gen("popq", "%rdx"); // get the array len information into rdx
         stackVariables--;

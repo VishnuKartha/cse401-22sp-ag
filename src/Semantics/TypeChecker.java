@@ -84,47 +84,35 @@ public class TypeChecker implements Visitor {
         // Check if method is overriding
         MethodType mta = globalTable.classTables.get(classScope).methods.get(methodScope);
         ClassType ct = globalTable.classTypes.get(classScope);
-        boolean isOverriding = false;
+        n.e.accept(this);
         if(ct.superType != null){
             // Might not have checked cyclicness
             HashSet<String> visited = new HashSet<>();
             visited.add(classScope);
+            boolean overrideFail = false;
             while(ct.superType != null && !visited.contains(ct.superType) && globalTable.classTypes.containsKey(ct.superType)){
                 ct = globalTable.classTypes.get(ct.superType);
                 // Super Class contains the method
                 boolean overrideSuccess = true;
                 if(globalTable.classTables.get(ct.type).methods.containsKey(methodScope)){
                     // SuperClass method
-                    isOverriding = true;
                     MethodType mtb = globalTable.classTables.get(ct.type).methods.get(methodScope);
-                    if(mta.returnType.assignable(mtb.returnType, globalTable) && mta.params.size() == mtb.params.size()){
-                        for(int i =0; i < mta.params.size(); i++){
-                            if(!mta.params.get(i).assignable(mtb.params.get(i), globalTable)){
-                                isOverriding = false;
-                            }
-                        }
-                        if(!n.e.type.assignable(mtb.returnType, globalTable)){
-                            overrideSuccess = false;
-                        }
-
-                    }else{
-                        overrideSuccess = false;
-                    }
-                    if (!overrideSuccess) {
+                    overrideFail = !mta.assignable(mtb,globalTable);
+                    if (overrideFail) {
                         System.err.println("Semantic Error: Invalid method overriding");
+                        typeError = true;
                     }
                     break;
                 }
                 visited.add(ct.type);
-
             }
         }
         for(int i =0; i < n.sl.size(); i++){
             n.sl.get(i).accept(this);
         }
-        n.e.accept(this);
+
         MethodType mType = globalTable.classTables.get(classScope).methods.get(methodScope);
-        if(!n.e.type.assignable(mType.returnType, globalTable)){
+        if(!n.e.type.typeEquals(mType.returnType)){
             System.err.println("Semantic Error: Expression does not match return type at line" + n.line_number);
             typeError = true;
         }

@@ -1,24 +1,16 @@
 class Factorial{
     public static void main(String[] a){
-	    System.out.println(new Fac().hue());
+	    System.out.println(new One().test());
     }
 }
 
-class Fac {
-    int a;
-    int b;
-    public int sumOf(int x, int y) {
-        a = x;
-        b = y;
-        return a + b;
-    }
+class One {
 
-    public int bruh(){
-        return 0;
+    public int test(){
+        int[] a;
+        a = new int[5];
+        a[0] = 1;
+        return 3;
     }
-
-    public int hue(){
-        return 1;
-    }
-
 }
+

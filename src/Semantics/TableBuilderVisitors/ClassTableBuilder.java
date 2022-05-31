@@ -69,11 +69,14 @@ public class ClassTableBuilder implements Visitor {
         }
         classScope = n.i.s;
         for (int i = 0; i < n.vl.size(); i++) {
+            offset = -1;
             n.vl.get(i).accept(this);
         }
         for (int i = 0; i < n.ml.size(); i++) {
+            offset = -1;
             n.ml.get(i).accept(this);
         }
+        offset = 0;
         classScope = null;
     }
 
@@ -135,6 +138,7 @@ public class ClassTableBuilder implements Visitor {
             ct.methods.get(n.i.s).offset = offset;
         }
         ct.methodTables.put(n.i.s, new MethodSymbolTable(ct));
+
 
     }
 

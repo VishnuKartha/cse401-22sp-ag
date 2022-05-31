@@ -43,7 +43,7 @@ public class MethodType extends MiniJavaType{
             return false;
         }
         for(int i =0; i < params.size(); i++){
-            if(!params.get(i).typeEquals(other.params.get(i))){
+            if(!params.get(i).assignable(other.params.get(i), gT)){
                 return false;
             }
         }
